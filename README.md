@@ -1,6 +1,6 @@
 # 🌟 DariMata Studio - E-Commerce Landing Page
 
-![DariMata Studio Banner](https://via.placeholder.com/1200x400?text=DariMata+Studio+E-Commerce) *(Ganti URL ini dengan screenshot banner website kamu)*
+
 
 **DariMata Studio** adalah aplikasi web e-commerce berfokus pada fesyen ("Discover Your Style"). Repositori ini berisi antarmuka *landing page* modern, minimalis, dan sangat responsif yang dibangun menggunakan ekosistem Laravel. Proyek ini dirancang untuk memberikan pengalaman berbelanja pakaian dan aksesori yang mulus dengan berbagai animasi interaktif.
 
