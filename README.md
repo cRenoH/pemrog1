@@ -1,61 +1,51 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🌟 DariMata Studio - E-Commerce Landing Page
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+![DariMata Studio Banner](https://via.placeholder.com/1200x400?text=DariMata+Studio+E-Commerce) *(Ganti URL ini dengan screenshot banner website kamu)*
 
-## About Laravel
+**DariMata Studio** adalah aplikasi web e-commerce berfokus pada fesyen ("Discover Your Style"). Repositori ini berisi antarmuka *landing page* modern, minimalis, dan sangat responsif yang dibangun menggunakan ekosistem Laravel. Proyek ini dirancang untuk memberikan pengalaman berbelanja pakaian dan aksesori yang mulus dengan berbagai animasi interaktif.
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+---
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## ✨ Fitur Utama
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+* **Responsive & Mobile-Friendly**: Navigasi dan tata letak yang disesuaikan untuk berbagai ukuran layar (desktop, tablet, mobile).
+* **Animasi Interaktif**: Menggunakan *AOS (Animate On Scroll)* untuk transisi elemen yang mulus dan animasi *SVG waves* dinamis pada Hero Section.
+* **Dynamic Hover Gallery**: Galeri produk bergaya *accordion-hover* yang fleksibel dan interaktif.
+* **Modern UI Components**: 
+    * Sistem *grid* kustom untuk *banner* promosi (Signature Crewneck, New Arrivals, Urban Essentials).
+    * Menu *dropdown* profil pengguna modern dengan integrasi *badge* notifikasi keranjang.
+    * Desain *Glassmorphism* ringan pada navigasi *header*.
+* **Sistem Pencarian Terintegrasi**: Bilah pencarian responsif untuk menemukan produk dengan mudah.
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+## 🛠️ Teknologi yang Digunakan
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+Proyek ini dibangun menggunakan *tech stack* berikut:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Backend & Framework:**
+* [Laravel](https://laravel.com/) (PHP) - Blade Templating Engine
 
-## Laravel Sponsors
+**Frontend:**
+* HTML5 & CSS3 (Custom Variables & Flexbox/Grid)
+* JavaScript (Vanilla JS & jQuery 3.3.1)
+* [Bootstrap 5.3.3](https://getbootstrap.com/) - Framework CSS Utama
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+**Library & Aset Pihak Ketiga:**
+* [AOS (Animate On Scroll) 2.3.1](https://michalsnik.github.io/aos/) - Untuk animasi elemen saat di-*scroll*.
+* [Font Awesome 6.4.0](https://fontawesome.com/) - Ikon antarmuka.
+* [Google Fonts](https://fonts.google.com/) - Menggunakan tipografi **Nunito Sans**.
+* [GLightbox](https://biomac.github.io/glightbox/) - *Media lightbox* (tersedia dalam skrip dasar).
 
-### Premium Partners
+---
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+## 🚀 Panduan Instalasi (Development)
 
-## Contributing
+Ikuti langkah-langkah di bawah ini untuk menjalankan proyek ini secara lokal di komputermu.
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+### Prasyarat
+Pastikan kamu telah menginstal perangkat lunak berikut:
+* [PHP](https://www.php.net/) (v8.1 atau lebih baru)
+* [Composer](https://getcomposer.org/)
+* [Node.js & npm](https://nodejs.org/)
+* Database Server (MySQL / MariaDB)
