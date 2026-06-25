@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Carts;
 use App\Models\Order;
+use App\Models\OrderItem;
 use App\Models\OrderReturn;
 use Illuminate\Http\Request;
 use App\Models\ProductVariants;
@@ -17,7 +18,7 @@ class OrdersController extends Controller
     {
         // Jika request mengirim size dan product_id, cari variant_id
         if ($request->filled('size') && $request->filled('product_id')) {
-            $variant = \App\Models\ProductVariants::where('product_id', $request->product_id)
+            $variant = ProductVariants::where('product_id', $request->product_id)
                 ->where('size', $request->size)
                 ->first();
             if (!$variant) {
@@ -32,14 +33,14 @@ class OrdersController extends Controller
             $variantId = $request->input('variant_id');
         }
         $userId = Auth::id();
-        $cartItem = \App\Models\Carts::where('user_id', $userId)
+        $cartItem = Carts::where('user_id', $userId)
             ->where('product_variant_id', $variantId)
             ->first();
         if ($cartItem) {
             $cartItem->quantity += 1;
             $cartItem->save();
         } else {
-            \App\Models\Carts::create([
+            Carts::create([
                 'user_id' => $userId,
                 'product_variant_id' => $variantId,
                 'quantity' => 1,
@@ -51,8 +52,6 @@ class OrdersController extends Controller
     // Fungsi untuk MENAMPILKAN isi keranjang
     public function show()
     {
-        $userId = Auth::id();
-
         $cartItems = Carts::where('user_id', Auth::id())
             ->with('productVariant.product.primaryImage')
             ->get();
@@ -64,25 +63,22 @@ class OrdersController extends Controller
 
     public function remove(Carts $cart)
     {
-    // 1. Cek otorisasi (tetap sama, ini penting untuk keamanan)
-    if (auth()->id() !== $cart->user_id) {
-        abort(403, 'Unauthorized action.');
-    }
+        // 1. Cek otorisasi
+        if (auth()->id() !== $cart->user_id) {
+            abort(403, 'Unauthorized action.');
+        }
 
-    // 2. Logika baru: Cek kuantitas item
-    if ($cart->quantity > 1) {
-        // Jika kuantitas lebih dari 1, kurangi saja jumlahnya
-        $cart->quantity -= 1;
-        $cart->save();
-        $message = 'Kuantitas item berhasil diperbarui.';
-    } else {
-        // Jika kuantitas hanya 1, maka hapus seluruh baris item
-        $cart->delete();
-        $message = 'Item berhasil dihapus dari keranjang.';
-    }
+        // 2. Logika: Cek kuantitas item
+        if ($cart->quantity > 1) {
+            $cart->quantity -= 1;
+            $cart->save();
+            $message = 'Kuantitas item berhasil diperbarui.';
+        } else {
+            $cart->delete();
+            $message = 'Item berhasil dihapus dari keranjang.';
+        }
 
-    // 3. Redirect kembali dengan pesan yang sesuai
-    return back()->with('success', $message);
+        return back()->with('success', $message);
     }
 
     // ========================
@@ -111,8 +107,10 @@ class OrdersController extends Controller
                     'variant' => $variant,
                     'quantity' => $qty,
                 ];
-                // Simpan ke session agar tidak hilang saat POST
-                session(['buy_now' => $items]);
+                // Simpan referensi ke session (ID saja, bukan objek)
+                session(['buy_now' => [
+                    ['variant_id' => $variant->id, 'quantity' => (int)$qty],
+                ]]);
             }
         } else {
             // Cart logic
@@ -145,33 +143,33 @@ class OrdersController extends Controller
         ]);
         $user = Auth::user();
         $address = $user->addresses()->findOrFail($validated['address_id']);
-        $courier = $validated['courier'];
-        $paymentMethod = $validated['paymentMethod'];
 
-        // Ambil data buy now dari session jika ada
-        $items = session('buy_now');
-        if (!$items) {
-            // Jika tidak ada, fallback ke cart
-            $cartItems = Carts::where('user_id', $user->id)
-                ->with('productVariant.product.primaryImage')
-                ->get();
-            $items = [];
+        // Ambil data buy now dari session jika ada (hanya ID referensi)
+        $buyNowSession = session('buy_now');
+        $itemRefs = [];
+
+        if ($buyNowSession) {
+            // Buy now: session berisi array of [variant_id, quantity]
+            $itemRefs = $buyNowSession;
+        } else {
+            // Fallback ke cart: ambil referensi ID dari database
+            $cartItems = Carts::where('user_id', $user->id)->get();
             foreach ($cartItems as $cart) {
-                $items[] = [
-                    'product' => $cart->productVariant->product,
-                    
-                    'variant' => $cart->productVariant,
+                $itemRefs[] = [
+                    'variant_id' => $cart->product_variant_id,
                     'quantity' => $cart->quantity,
                 ];
             }
         }
-        // Store checkout data in session
+
+        // Simpan hanya ID referensi ke session checkout (bukan objek model)
         session(['checkout' => [
-            'items' => $items,
-            'address' => $address,
-            'courier' => $courier,
-            'paymentMethod' => $paymentMethod,
+            'item_refs' => $itemRefs,
+            'address_id' => $address->id,
+            'courier' => $validated['courier'],
+            'paymentMethod' => $validated['paymentMethod'],
         ]]);
+
         // Hapus session buy_now setelah dipakai
         session()->forget('buy_now');
         return redirect()->route('payment');
@@ -183,9 +181,29 @@ class OrdersController extends Controller
         if (!$checkout) {
             return redirect()->route('checkout')->with('error', 'Data checkout tidak ditemukan.');
         }
+
+        // Query ulang data dari ID referensi
+        $user = Auth::user();
+        $address = $user->addresses()->findOrFail($checkout['address_id']);
+
+        $variantIds = collect($checkout['item_refs'])->pluck('variant_id')->toArray();
+        $variants = ProductVariants::with('product.primaryImage')->whereIn('id', $variantIds)->get()->keyBy('id');
+
+        $items = [];
+        foreach ($checkout['item_refs'] as $ref) {
+            $variant = $variants[$ref['variant_id']] ?? null;
+            if ($variant) {
+                $items[] = [
+                    'product' => $variant->product,
+                    'variant' => $variant,
+                    'quantity' => $ref['quantity'],
+                ];
+            }
+        }
+
         return view('payment', [
-            'items' => $checkout['items'],
-            'address' => $checkout['address'],
+            'items' => $items,
+            'address' => $address,
             'courier' => $checkout['courier'],
             'paymentMethod' => $checkout['paymentMethod'],
         ]);
@@ -197,18 +215,38 @@ class OrdersController extends Controller
         if (!$checkout) {
             return redirect()->route('checkout')->with('error', 'Data checkout tidak ditemukan.');
         }
+
         $user = Auth::user();
-        $items = $checkout['items'];
-        $address = $checkout['address'];
+        $address = $user->addresses()->findOrFail($checkout['address_id']);
         $courier = $checkout['courier'];
         $paymentMethod = $checkout['paymentMethod'];
-        $subtotal = collect($items)->sum(function($item) {
-            return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity'];
-        });
+
+        // Query ulang varian dari ID referensi
+        $variantIds = collect($checkout['item_refs'])->pluck('variant_id')->toArray();
+        $variants = ProductVariants::whereIn('id', $variantIds)->get()->keyBy('id');
+
+        // Hitung subtotal
+        $subtotal = 0;
+        $orderItemsData = [];
+        foreach ($checkout['item_refs'] as $ref) {
+            $variant = $variants[$ref['variant_id']] ?? null;
+            if ($variant) {
+                $price = $variant->sale_price ?? $variant->price;
+                $subtotal += $price * $ref['quantity'];
+                $orderItemsData[] = [
+                    'variant_id' => $variant->id,
+                    'quantity' => $ref['quantity'],
+                    'price' => $price,
+                ];
+            }
+        }
+
         $shipping = 18000;
         $total = $subtotal + $shipping;
+
         // Buat order number unik
         $orderNumber = 'ORD-' . date('Ymd-His') . '-' . strtoupper(substr(uniqid(), -5));
+
         // Simpan order
         $order = Order::create([
             'user_id' => $user->id,
@@ -222,21 +260,28 @@ class OrdersController extends Controller
             'status' => 'processing',
             'courier' => $courier,
         ]);
-        // Simpan order items
-        foreach ($items as $item) {
-            $order->items()->create([
-                'variant_id' => $item['variant']->id ?? null,
-                'quantity' => $item['quantity'],
-                'price' => $item['variant']->sale_price ?? $item['variant']->price,
-            ]);
+
+        // Simpan order items menggunakan bulk insert (1 query)
+        $bulkInsertData = [];
+        foreach ($orderItemsData as $itemData) {
+            $bulkInsertData[] = [
+                'order_id' => $order->id,
+                'variant_id' => $itemData['variant_id'],
+                'quantity' => $itemData['quantity'],
+                'price' => $itemData['price'],
+            ];
         }
+        OrderItem::insert($bulkInsertData);
+
         // Generate nomor resi otomatis
         $order->resi = 'RESI-' . $order->id . '-' . strtoupper(substr(uniqid(), -4));
         $order->save();
-        // Jika checkout dari cart, kosongkan cart user
-        if (!isset($items[0]['buy_now'])) {
+
+        // Jika checkout dari cart (bukan buy now), kosongkan cart user
+        if (!session('buy_now')) {
             Carts::where('user_id', $user->id)->delete();
         }
+
         // Hapus session checkout
         session()->forget('checkout');
         return redirect()->route('invoice', ['order' => $order->id]);
@@ -317,9 +362,18 @@ class OrdersController extends Controller
         ]);
     }
 
+    /**
+     * Halaman invoice — hanya bisa diakses oleh pemilik order.
+     */
     public function invoice($orderId)
     {
         $order = Order::with(['items.variant', 'user'])->findOrFail($orderId);
+
+        // Pastikan hanya pemilik order yang bisa melihat invoice
+        if ($order->user_id !== Auth::id()) {
+            abort(403, 'Anda tidak memiliki akses ke invoice ini.');
+        }
+
         return view('invoice', [
             'order' => $order,
         ]);

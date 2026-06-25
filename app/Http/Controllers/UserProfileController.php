@@ -107,7 +107,7 @@ class UserProfileController extends Controller
     return redirect()->route('user-profile')->with('success', 'Alamat berhasil ditambahkan!');
     }
 
-    public function UserProfileAddresses(Request $request)
+    public function UserProfileAddresses(Request $request, $id)
     {
         $user = Auth::user();
     if (!$user) {

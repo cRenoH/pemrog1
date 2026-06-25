@@ -7,7 +7,6 @@ use App\Models\Products;
 use App\Models\Categories;
 use App\Models\ActivityLog;
 use Illuminate\Support\Str;
-use App\Models\LandingImage;
 use Illuminate\Http\Request;
 use App\Models\ProductImages;
 use App\Models\ProductVariants;
@@ -17,73 +16,76 @@ use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
 {
+    /**
+     * Admin Dashboard — menampilkan ringkasan data.
+     * Pengecekan admin sudah ditangani middleware 'is_admin'.
+     */
     public function AdminView()
     {
-        $user = Auth::user();
-            if (!$user || !($user->is_admin ?? false)) {
-        return redirect()->route('login')->with('error', 'Access denied. Admin privileges required.');
+        $totalStock = ProductVariants::sum('stock');
+        $totalOrder = Order::whereIn('status', ['completed', 'shipped'])->count();
+        $pendingOrder = Order::whereIn('status', ['waiting_payment','processing'])->count();
+        $totalUsers = User::count();
+        $products = Products::with(['primaryImage', 'category', 'variants'])->latest()->paginate(10);
+        $orders = Order::with(['user', 'items'])->latest()->paginate(10);
+        $users = User::latest()->paginate(10);
+        $categories = Categories::all();
+        $activities = ActivityLog::with('user')->latest()->take(10)->get();
+
+        return view('admin', [
+            'totalStock' => $totalStock,
+            'totalOrder' => $totalOrder,
+            'pendingOrder' => $pendingOrder,
+            'totalUsers' => $totalUsers,
+            'products' => $products,
+            'orders' => $orders,
+            'users' => $users,
+            'categories' => $categories,
+            'activities' => $activities,
+        ]);
     }
     
-    $totalStock = ProductVariants::sum('stock');
-    $totalOrder = Order::whereIn('status', ['completed', 'shipped'])->count();
-    $pendingOrder = Order::whereIn('status', ['waiting_payment','processing'])->count();
-    $totalUsers = User::count();
-    $products = Products::with(['primaryImage', 'category', 'variants'])->latest()->paginate(10);
-    $orders = Order::with(['user', 'items'])->latest()->paginate(10);
-    $users = User::latest()->paginate(10);
-    $categories = Categories::all();
-    $activities = ActivityLog::with('user')->latest()->take(10)->get();
-    return view('admin', [
-        'totalStock' => $totalStock,
-        'totalOrder' => $totalOrder,
-        'pendingOrder' => $pendingOrder,
-        'totalUsers' => $totalUsers,
-        'products' => $products,
-        'orders' => $orders,
-        'users' => $users,
-        'categories' => $categories,
-        'activities' => $activities,
-    ]);
-    }
-    
+    /**
+     * Update admin settings (nama, email, password).
+     */
     public function AdminSetting(Request $request)
     {
-
         $user = Auth::user();
-            if (!$user || !($user->is_admin ?? false)) {
-        return redirect()->route('login')->with('error', 'Access denied.');
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'nullable|string|max:100',
+            'admin_email' => 'required|email|max:100',
+            'admin_password' => 'nullable|string|min:8',
+        ]);
+
+        $user->name = $validated['first_name'] . ' ' . ($validated['last_name'] ?? '');
+        $user->email = $validated['admin_email'];
+        if (!empty($validated['admin_password'])) {
+            $user->password = Hash::make($validated['admin_password']);
+        }
+        $user->save();
+
+        return redirect()->route('admin.dashboard')->with('success', 'Admin settings updated!');
     }
 
-    $validated = $request->validate([
-        'first_name' => 'required|string|max:100',
-        'admin_email' => 'required|email|max:100',
-        'admin_password' => 'nullable|string|min:8',
-    ]);
-
-    $user->name = $validated['first_name'] . ' ' . $validated['last_name'];
-    $user->email = $validated['admin_email'];
-    if (!empty($validated['admin_password'])) {
-        $user->password = Hash::make($validated['admin_password']);
-    }
-    $user->save();
-
-    return redirect()->route('admin.dashboard')->with('success', 'Admin settings updated!');
-    }
+    /**
+     * Logout admin.
+     */
     public function logoutAdmin(Request $request)
     {
         Auth::logout();
-            $request->session()->flush();
+        $request->session()->flush();
 
         return redirect()->route('login')->with('success', 'Anda telah logout sebagai admin.');
     }
 
     
-    
+    /**
+     * Simpan produk baru.
+     */
     public function store(Request $request)
     {
-        if (!auth()->user() || !(auth()->user()->is_admin ?? false)) {
-            abort(403, 'Unauthorized');
-        }
         $validated = $request->validate([
             'product_name' => 'required|string|max:100',
             'product_price' => 'required|numeric',
@@ -102,17 +104,12 @@ class AdminController extends Controller
         ]);
 
         // Cari atau buat category
-        $category = \App\Models\Categories::firstOrCreate([
+        $category = Categories::firstOrCreate([
             'name' => $validated['product_category']
         ]);
 
-        // Buat slug dari nama produk
-        $slug = Str::slug($validated['product_name']);
-        $originalSlug = $slug;
-        $counter = 1;
-        while (\App\Models\Products::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter++;
-        }
+        // Buat slug unik dari nama produk
+        $slug = $this->generateUniqueSlug($validated['product_name']);
 
         // Simpan produk
         $product = Products::create([
@@ -126,7 +123,7 @@ class AdminController extends Controller
         ]);
 
         // Simpan variant (harga, stock, sku)
-        \App\Models\ProductVariants::create([
+        ProductVariants::create([
             'product_id' => $product->id,
             'sku' => $validated['product_sku'] ?? null,
             'price' => $validated['product_price'],
@@ -176,29 +173,38 @@ class AdminController extends Controller
         ]);
     }
 
+    /**
+     * Daftar produk dengan paginasi.
+     */
     public function products()
     {
-        $products = \App\Models\Products::with(['variants', 'primaryImage', 'category'])->get();
+        $products = Products::with(['variants', 'primaryImage', 'category'])->latest()->paginate(10);
         return view('admin.tabs.products', compact('products'));
     }
 
+    /**
+     * Daftar users dengan paginasi.
+     */
     public function users()
     {
-        $users = \App\Models\User::all();
+        $users = User::latest()->paginate(10);
         return view('admin.tabs.users', compact('users'));
     }
 
+    /**
+     * Daftar orders dengan paginasi.
+     */
     public function orders()
     {
-        $orders = \App\Models\Order::with(['user', 'items'])->get();
+        $orders = Order::with(['user', 'items'])->latest()->paginate(10);
         return view('admin.tabs.orders', compact('orders'));
     }
 
+    /**
+     * Update produk yang sudah ada.
+     */
     public function update(Request $request, $id)
     {
-        if (!auth()->user() || !(auth()->user()->is_admin ?? false)) {
-            abort(403, 'Unauthorized');
-        }
         $validated = $request->validate([
             'product_name' => 'required|string|max:100',
             'product_price' => 'required|numeric',
@@ -219,17 +225,12 @@ class AdminController extends Controller
         $product = Products::findOrFail($id);
 
         // Cari atau buat category
-        $category = \App\Models\Categories::firstOrCreate([
+        $category = Categories::firstOrCreate([
             'name' => $validated['product_category']
         ]);
 
-        // Buat slug dari nama produk
-        $slug = Str::slug($validated['product_name']);
-        $originalSlug = $slug;
-        $counter = 1;
-        while (\App\Models\Products::where('slug', $slug)->exists()) {
-            $slug = $originalSlug . '-' . $counter++;
-        }
+        // Buat slug unik, kecualikan produk ini sendiri agar tidak bentrok
+        $slug = $this->generateUniqueSlug($validated['product_name'], $product->id);
 
         // Update produk
         $product->update([
@@ -243,7 +244,7 @@ class AdminController extends Controller
         ]);
 
         // Update atau buat variant
-        $variant = \App\Models\ProductVariants::where('product_id', $product->id)->first();
+        $variant = ProductVariants::where('product_id', $product->id)->first();
         if ($variant) {
             $variant->update([
                 'sku' => $validated['product_sku'] ?? null,
@@ -253,7 +254,7 @@ class AdminController extends Controller
                 'size' => $validated['product_sizes'] ?? null,
             ]);
         } else {
-            \App\Models\ProductVariants::create([
+            ProductVariants::create([
                 'product_id' => $product->id,
                 'sku' => $validated['product_sku'] ?? null,
                 'price' => $validated['product_price'],
@@ -268,7 +269,10 @@ class AdminController extends Controller
             $mainImage = $request->file('product_main_image')->store('products', 'public');
             // Hapus gambar utama lama
             $old = ProductImages::where('product_id', $product->id)->where('is_primary', true)->first();
-            if ($old) { Storage::disk('public')->delete($old->image_path); $old->delete(); }
+            if ($old) {
+                Storage::disk('public')->delete($old->image_path);
+                $old->delete();
+            }
             ProductImages::create([
                 'product_id' => $product->id,
                 'image_path' => $mainImage,
@@ -299,11 +303,11 @@ class AdminController extends Controller
             ->with('success', 'Produk berhasil diupdate!');
     }
 
+    /**
+     * Hapus produk beserta gambar-gambarnya.
+     */
     public function destroy($id)
     {
-        if (!auth()->user() || !(auth()->user()->is_admin ?? false)) {
-            abort(403, 'Unauthorized');
-        }
         $product = Products::findOrFail($id);
         // Hapus semua gambar
         foreach ($product->images as $img) {
@@ -345,5 +349,32 @@ class AdminController extends Controller
         }
         $user->save();
         return response()->json(['success' => true, 'is_admin' => $user->is_admin]);
+    }
+
+    /**
+     * Helper: Generate slug unik untuk produk.
+     * @param string $name Nama produk
+     * @param int|null $excludeId ID produk yang dikecualikan (untuk update)
+     */
+    private function generateUniqueSlug(string $name, ?int $excludeId = null): string
+    {
+        $slug = Str::slug($name);
+        $originalSlug = $slug;
+        $counter = 1;
+
+        $query = Products::where('slug', $slug);
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        while ($query->exists()) {
+            $slug = $originalSlug . '-' . $counter++;
+            $query = Products::where('slug', $slug);
+            if ($excludeId) {
+                $query->where('id', '!=', $excludeId);
+            }
+        }
+
+        return $slug;
     }
 }
