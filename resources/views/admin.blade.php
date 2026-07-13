@@ -706,6 +706,7 @@
                                             <th>Image</th>
                                             <th>Name</th>
                                             <th>Category</th>
+                                            <th>Warna</th>
                                         <th>Price</th>
                                             <th>Stock</th>
                                             <th>Status</th>
@@ -721,8 +722,25 @@
         </td>
         <td>{{ $product->name }}</td>
         <td>{{ optional($product->category)->name }}</td>
+        <td>
+            @php
+                $uniqueColors = $product->variants->filter(function($v){ return $v->color_hex; })->unique('color_hex');
+            @endphp
+            @if($uniqueColors->count())
+                @foreach($uniqueColors as $vc)
+                    <span title="{{ $vc->color_name }}" style="display:inline-block;width:18px;height:18px;border-radius:50%;background:{{ $vc->color_hex }};border:1px solid #ccc;vertical-align:middle;margin-right:2px;"></span>
+                @endforeach
+            @else
+                <small class="text-muted">-</small>
+            @endif
+        </td>
                                             <td>Rp{{ number_format($product->variants->first()->price ?? 0, 0, ',', '.') }}</td>
-                                            <td>{{ $product->variants->sum('stock') }}</td>
+                                            <td title="Total: {{ $product->variants->sum('stock') }}">
+                                                {{ $product->variants->sum('stock') }}
+                                                @if($product->variants->count() > 1)
+                                                    <br><small class="text-muted">@foreach($product->variants as $pv){{ $pv->size }}{{ $pv->color_name ? '/'.$pv->color_name : '' }}:{{ $pv->stock }}{{ !$loop->last ? ', ' : '' }}@endforeach</small>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if($product->status == 'available')
         <span class="badge badge-success">Available</span>
@@ -742,7 +760,18 @@
                                                     data-description="{{ $product->description }}"
                                                     data-sku="{{ $product->variants->first()->sku ?? '' }}"
                                                     data-tags="{{ $product->tags ?? '' }}"
-                                                    data-sizes="{{ $product->variants->first()->size ?? '' }}"
+                                                    @php
+                                                        $variantData = $product->variants->map(function($v){
+                                                            return [
+                                                                'id' => $v->id,
+                                                                'size' => $v->size,
+                                                                'color_name' => $v->color_name,
+                                                                'color_hex' => $v->color_hex ? $v->color_hex : '#000000',
+                                                                'stock' => $v->stock,
+                                                            ];
+                                                        });
+                                                    @endphp
+                                                    data-variants='@json($variantData)'
                                                     data-meta_title="{{ $product->meta_title ?? '' }}"
                                                     data-meta_description="{{ $product->meta_description ?? '' }}"
                                                     data-toggle="modal" data-target="#editProductModal">
@@ -765,7 +794,7 @@
                         <!-- Products Tab Pagination -->
                         <div class="d-flex justify-content-between align-items-center mt-4">
                             <div class="text-muted small">
-                                {{ $products->links() }}
+                                {{ $products->appends(['tab' => 'products'])->links() }}
                             </div>
                         </div>
                                 </div>
@@ -808,28 +837,56 @@
                                         <th>User</th>
                                         <th>Items</th>
                                         <th>Total</th>
+                                        <th>Resi</th>
                                         <th>Status</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($orders as $order)
+                                        @php
+                                            $statusColor = match($order->status) {
+                                                'completed' => 'success',
+                                                'cancelled' => 'danger',
+                                                'shipped' => 'primary',
+                                                'processing' => 'warning',
+                                                default => 'secondary',
+                                            };
+                                            $statusLabel = match($order->status) {
+                                                'waiting_payment' => 'Menunggu Bayar',
+                                                'processing' => 'Diproses',
+                                                'shipped' => 'Dikirim',
+                                                'completed' => 'Selesai',
+                                                'cancelled' => 'Dibatalkan',
+                                                default => ucfirst($order->status),
+                                            };
+                                        @endphp
                                         <tr>
-                                            <td>{{ $order->order_number }}</td>
-                                            <td>{{ $order->created_at->format('M d, Y') }}</td>
+                                            <td><strong>{{ $order->order_number }}</strong></td>
+                                            <td>{{ $order->created_at->format('d M Y') }}</td>
                                             <td>{{ $order->user->first_name ?? '-' }} {{ $order->user->last_name ?? '' }}</td>
-                                            <td>{{ $order->items->count() }}</td>
+                                            <td>{{ $order->items->count() }} item</td>
                                             <td>Rp{{ number_format($order->total_amount, 0, ',', '.') }}</td>
+                                            <td><small>{{ $order->resi ?? '-' }}</small></td>
                                             <td>
-                                                <span class="badge badge-{{ $order->status == 'completed' ? 'success' : ($order->status == 'cancelled' ? 'danger' : 'warning') }}">
-                                                    {{ ucfirst($order->status) }}
+                                                <span class="badge badge-{{ $statusColor }}">
+                                                    {{ $statusLabel }}
                                                 </span>
                                             </td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary btn-view-order" data-toggle="modal" data-target="#orderDetailModal"
-                                                    data-order='@json($order)'>
+                                                <button class="btn btn-sm btn-outline-info btn-view-order mr-1"
+                                                    data-toggle="modal" data-target="#orderDetailModal"
+                                                    data-order="{{ $order->toJson() }}">
                                                     <i class="fas fa-eye"></i>
                                     </button>
+                                                <button class="btn btn-sm btn-outline-primary btn-edit-order"
+                                                    data-toggle="modal" data-target="#orderEditModal"
+                                                    data-id="{{ $order->id }}"
+                                                    data-status="{{ $order->status }}"
+                                                    data-resi="{{ $order->resi }}"
+                                                    data-order_number="{{ $order->order_number }}">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
                                             </td>
                                         </tr>
                                     @endforeach
@@ -839,7 +896,7 @@
                         <!-- Orders Tab Pagination -->
                         <div class="d-flex justify-content-between align-items-center mt-4">
                             <div class="text-muted small">
-                                {{ $orders->links() }}
+                                {{ $orders->appends(['tab' => 'orders'])->links() }}
                             </div>
                                 </div>
                                         </div>
@@ -901,7 +958,7 @@
                 <!-- Users Tab Pagination -->
                 <div class="d-flex justify-content-between align-items-center mt-4">
                     <div class="text-muted small">
-                        {{ $users->links() }}
+                        {{ $users->appends(['tab' => 'users'])->links() }}
                     </div>
                 </div>
             </div>
@@ -994,10 +1051,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="form-group col-md-3">
-                                    <label>Stock</label>
-                                    <input type="number" class="form-control" name="product_stock" required>
-                            </div>
+    
                                 <div class="form-group col-md-3">
                                     <label>Status</label>
                                     <select class="form-control" name="product_status" required>
@@ -1012,19 +1066,44 @@
                                 <textarea class="form-control" name="product_description" rows="2"></textarea>
                     </div>
                             <div class="form-row">
-                                <div class="form-group col-md-4">
+                                <div class="form-group col-md-6">
                                     <label>SKU</label>
                                     <input type="text" class="form-control" name="product_sku">
-                        </div>
-                                <div class="form-group col-md-4">
+                                </div>
+                                <div class="form-group col-md-6">
                                     <label>Tags (comma separated)</label>
                                     <input type="text" class="form-control" name="product_tags">
-                    </div>
-                                <div class="form-group col-md-4">
-                                    <label>Sizes (comma separated)</label>
-                                    <input type="text" class="form-control" name="product_sizes">
-                    </div>
-                        </div>
+                                </div>
+                            </div>
+                            <hr>
+                            <h6 class="mb-3"><i class="fas fa-layer-group mr-1"></i> Varian Produk (Ukuran + Warna + Stok)</h6>
+                            <div id="add-variants-container">
+                                <div class="variant-row form-row align-items-end mb-2" style="background:#f8f9fa;padding:10px;border-radius:8px;">
+                                    <div class="form-group col-md-2 mb-1">
+                                        <label class="small">Ukuran</label>
+                                        <input type="text" class="form-control form-control-sm" name="variants[0][size]" placeholder="S" required>
+                                    </div>
+                                    <div class="form-group col-md-3 mb-1">
+                                        <label class="small">Nama Warna</label>
+                                        <input type="text" class="form-control form-control-sm" name="variants[0][color_name]" placeholder="Black">
+                                    </div>
+                                    <div class="form-group col-md-2 mb-1">
+                                        <label class="small">Hex</label>
+                                        <input type="color" class="form-control form-control-sm p-0" name="variants[0][color_hex]" value="#000000" style="height:31px;cursor:pointer;">
+                                    </div>
+                                    <div class="form-group col-md-2 mb-1">
+                                        <label class="small">Stok</label>
+                                        <input type="number" class="form-control form-control-sm" name="variants[0][stock]" placeholder="0" min="0" required>
+                                    </div>
+                                    <div class="form-group col-md-2 mb-1">
+                                        <label class="small d-block">&nbsp;</label>
+                                        <button type="button" class="btn btn-outline-danger btn-sm btn-remove-variant" title="Hapus varian" style="width:100%;" disabled><i class="fas fa-trash"></i></button>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="btn-add-variant">
+                                <i class="fas fa-plus mr-1"></i> Tambah Varian
+                            </button>
                             <hr>
                             <div class="form-row">
                                 <div class="form-group col-md-6">
@@ -1100,11 +1179,7 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <div class="form-group col-md-3">
-                                    <label>Stock</label>
-                                    <input type="number" class="form-control" name="product_stock" id="edit_product_stock" required>
-                                </div>
-                                <div class="form-group col-md-3">
+                                    <div class="form-group col-md-6">
                                     <label>Status</label>
                                     <select class="form-control" name="product_status" id="edit_product_status" required>
                                         <option value="available">Available</option>
@@ -1118,19 +1193,23 @@
                                 <textarea class="form-control" name="product_description" id="edit_product_description" rows="2"></textarea>
                                 </div>
                             <div class="form-row">
-                                <div class="form-group col-md-4">
+                                <div class="form-group col-md-6">
                                     <label>SKU</label>
                                     <input type="text" class="form-control" name="product_sku" id="edit_product_sku">
                                 </div>
-                                <div class="form-group col-md-4">
+                                <div class="form-group col-md-6">
                                     <label>Tags (comma separated)</label>
                                     <input type="text" class="form-control" name="product_tags" id="edit_product_tags">
                                 </div>
-                                <div class="form-group col-md-4">
-                                    <label>Sizes (comma separated)</label>
-                                    <input type="text" class="form-control" name="product_sizes" id="edit_product_sizes">
-                                </div>
                             </div>
+                            <hr>
+                            <h6 class="mb-3"><i class="fas fa-layer-group mr-1"></i> Varian Produk (Ukuran + Warna + Stok)</h6>
+                            <div id="edit-variants-container">
+                                <!-- Variant rows populated by JS -->
+                            </div>
+                            <button type="button" class="btn btn-outline-primary btn-sm mt-2" id="btn-edit-add-variant">
+                                <i class="fas fa-plus mr-1"></i> Tambah Varian
+                            </button>
                             <hr>
                             <div class="form-row">
                                 <div class="form-group col-md-6">
@@ -1182,6 +1261,46 @@
         </div>
     </div>
     
+    <!-- Modal Edit Order Status -->
+    <div class="modal fade" id="orderEditModal" tabindex="-1" role="dialog" aria-labelledby="orderEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="orderEditModalLabel">Update Status Order</h5>
+                    <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <form id="orderEditForm" method="POST">
+                    @csrf
+                    @method('PATCH')
+                    <div class="modal-body">
+                        <p class="text-muted mb-3">Order: <strong id="orderEditNumber"></strong></p>
+                        <div class="form-group">
+                            <label for="orderStatusSelect"><strong>Status Pesanan</strong></label>
+                            <select class="form-control" name="status" id="orderStatusSelect" required>
+                                <option value="waiting_payment">Menunggu Pembayaran</option>
+                                <option value="processing">Diproses</option>
+                                <option value="shipped">Dikirim</option>
+                                <option value="completed">Selesai</option>
+                                <option value="cancelled">Dibatalkan</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="orderResiInput"><strong>Nomor Resi</strong></label>
+                            <input type="text" class="form-control" name="resi" id="orderResiInput" placeholder="Masukkan nomor resi pengiriman...">
+                            <small class="text-muted">Isi nomor resi saat status "Dikirim"</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary"><i class="fas fa-save mr-1"></i> Simpan</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- User Detail Modal -->
     <div class="modal fade" id="userDetailModal" tabindex="-1" role="dialog" aria-labelledby="userDetailModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-lg" role="document">
@@ -1221,9 +1340,16 @@
             $(`#adminTabNav .nav-link[data-tab="${tab}"]`).addClass('active');
         }
         
-        // Initialize with default tab
+        // Initialize with default tab — check query param 'tab' first, then hash
+        let urlParams = new URLSearchParams(window.location.search);
+        let tabParam = urlParams.get('tab');
         let hash = window.location.hash.replace('#','');
-        let initialTab = (hash && $(`#tab-${hash}`).length) ? hash : 'dashboard';
+        let initialTab = 'dashboard';
+        if (tabParam && $(`#tab-${tabParam}`).length) {
+            initialTab = tabParam;
+        } else if (hash && $(`#tab-${hash}`).length) {
+            initialTab = hash;
+        }
         showTab(initialTab);
         
         // Tab click handler
@@ -1281,9 +1407,18 @@
             $('#edit_product_description').val(btn.data('description'));
             $('#edit_product_sku').val(btn.data('sku'));
             $('#edit_product_tags').val(btn.data('tags'));
-            $('#edit_product_sizes').val(btn.data('sizes'));
             $('#edit_meta_title').val(btn.data('meta_title'));
             $('#edit_meta_description').val(btn.data('meta_description'));
+            // Populate variant repeater
+            var variants = btn.data('variants') || [];
+            var container = $('#edit-variants-container');
+            container.empty();
+            if (variants.length === 0) variants = [{id:'',size:'',color_name:'',color_hex:'#000000',stock:0}];
+            $.each(variants, function(i, v) {
+                container.append(buildVariantRow(i, v, 'edit'));
+            });
+            editVariantIndex = variants.length;
+            toggleRemoveButtons(container);
             // Bootstrap 5 fallback
             if (typeof bootstrap !== 'undefined' && bootstrap.Modal) {
                 var modal = new bootstrap.Modal(document.getElementById('editProductModal'));
@@ -1310,6 +1445,61 @@
         $('#addProductModal').modal('show');
     });
     
+    // === VARIANT REPEATER LOGIC ===
+    var addVariantIndex = 1;
+    var editVariantIndex = 0;
+
+    function buildVariantRow(idx, data, prefix) {
+        var p = prefix === 'edit' ? 'variants' : 'variants';
+        var idField = data && data.id ? '<input type="hidden" name="'+p+'['+idx+'][id]" value="'+data.id+'">' : '';
+        return '<div class="variant-row form-row align-items-end mb-2" style="background:#f8f9fa;padding:10px;border-radius:8px;">'
+            + idField
+            + '<div class="form-group col-md-2 mb-1"><label class="small">Ukuran</label>'
+            + '<input type="text" class="form-control form-control-sm" name="'+p+'['+idx+'][size]" value="'+(data&&data.size||'')+'" placeholder="S" required></div>'
+            + '<div class="form-group col-md-3 mb-1"><label class="small">Nama Warna</label>'
+            + '<input type="text" class="form-control form-control-sm" name="'+p+'['+idx+'][color_name]" value="'+(data&&data.color_name||'')+'" placeholder="Black"></div>'
+            + '<div class="form-group col-md-2 mb-1"><label class="small">Hex</label>'
+            + '<input type="color" class="form-control form-control-sm p-0" name="'+p+'['+idx+'][color_hex]" value="'+(data&&data.color_hex||'#000000')+'" style="height:31px;cursor:pointer;"></div>'
+            + '<div class="form-group col-md-2 mb-1"><label class="small">Stok</label>'
+            + '<input type="number" class="form-control form-control-sm" name="'+p+'['+idx+'][stock]" value="'+(data&&data.stock||0)+'" min="0" required></div>'
+            + '<div class="form-group col-md-2 mb-1"><label class="small d-block">&nbsp;</label>'
+            + '<button type="button" class="btn btn-outline-danger btn-sm btn-remove-variant" title="Hapus" style="width:100%;"><i class="fas fa-trash"></i></button></div>'
+            + '</div>';
+    }
+
+    function toggleRemoveButtons(container) {
+        var rows = container.find('.variant-row');
+        rows.find('.btn-remove-variant').prop('disabled', rows.length <= 1);
+    }
+
+    // Add Product — tambah varian
+    $('#btn-add-variant').on('click', function() {
+        var container = $('#add-variants-container');
+        container.append(buildVariantRow(addVariantIndex, null, 'add'));
+        addVariantIndex++;
+        toggleRemoveButtons(container);
+    });
+
+    // Edit Product — tambah varian
+    $('#btn-edit-add-variant').on('click', function() {
+        var container = $('#edit-variants-container');
+        container.append(buildVariantRow(editVariantIndex, null, 'edit'));
+        editVariantIndex++;
+        toggleRemoveButtons(container);
+    });
+
+    // Hapus varian row
+    $(document).on('click', '.btn-remove-variant', function() {
+        var container = $(this).closest('#add-variants-container, #edit-variants-container');
+        if (container.find('.variant-row').length > 1) {
+            $(this).closest('.variant-row').remove();
+            toggleRemoveButtons(container);
+        }
+    });
+
+    // Init: toggle remove button state untuk Add modal
+    toggleRemoveButtons($('#add-variants-container'));
+
     // SweetAlert2 confirm untuk delete
     $('.form-delete-product').on('submit', function(e){
         e.preventDefault();
@@ -1359,6 +1549,21 @@
             </table>
         `);
         $('#orderDetailModal').modal('show');
+    });
+
+    // Edit Order Status modal
+    $(document).on('click', '.btn-edit-order', function() {
+        var id = $(this).data('id');
+        var status = $(this).data('status');
+        var resi = $(this).data('resi') || '';
+        var orderNumber = $(this).data('order_number');
+
+        $('#orderEditNumber').text(orderNumber);
+        $('#orderStatusSelect').val(status);
+        $('#orderResiInput').val(resi);
+        $('#orderEditForm').attr('action', '/admin/orders/' + id + '/status');
+
+        $('#orderEditModal').modal('show');
     });
 
     // User detail modal

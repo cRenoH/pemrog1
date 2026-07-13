@@ -33,6 +33,11 @@ class ProductVariants extends Model
         return $this->belongsTo(Products::class, 'product_id');
     }
 
+    public function orderItems(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(\App\Models\OrderItem::class, 'variant_id');
+    }
+
     /**
      * Properti $casts dari versi teman Anda.
      * Ini bagus untuk memastikan tipe data benar.
@@ -43,7 +48,7 @@ class ProductVariants extends Model
         'stock' => 'integer',
     ];
 
-    /** * Timestamps dari teman Anda. Biarkan false jika Anda tidak menggunakan 
+    /** * Timestamps dari teman Anda. Biarkan false jika Anda tidak menggunakan
      * kolom created_at dan updated_at di tabel ini.
      */
     public $timestamps = false;

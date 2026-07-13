@@ -1258,7 +1258,7 @@
                                 </form>
                             @endif
                         </li>
-                        <li><a href="{{ route('product.details', $product->slug) }}" title="Quick View" aria-label="Quick View"><i class="far fa-eye"></i></a></li>
+                        <li><a href="{{ route('product.details', $product->id) }}" title="Quick View" aria-label="Quick View"><i class="far fa-eye"></i></a></li>
                         </ul>
                         </div>
 

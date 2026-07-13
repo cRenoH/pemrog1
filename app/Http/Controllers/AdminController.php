@@ -26,11 +26,11 @@ class AdminController extends Controller
         $totalOrder = Order::whereIn('status', ['completed', 'shipped'])->count();
         $pendingOrder = Order::whereIn('status', ['waiting_payment','processing'])->count();
         $totalUsers = User::count();
-        $products = Products::with(['primaryImage', 'category', 'variants'])->latest()->paginate(10);
-        $orders = Order::with(['user', 'items'])->latest()->paginate(10);
+        $products = Products::query()->with(['primaryImage', 'category', 'variants'])->latest()->paginate(10);
+        $orders = Order::query()->with(['user', 'items'])->latest()->paginate(10);
         $users = User::latest()->paginate(10);
         $categories = Categories::all();
-        $activities = ActivityLog::with('user')->latest()->take(10)->get();
+        $activities = ActivityLog::query()->with('user')->latest()->take(10)->get();
 
         return view('admin', [
             'totalStock' => $totalStock,
@@ -44,7 +44,7 @@ class AdminController extends Controller
             'activities' => $activities,
         ]);
     }
-    
+
     /**
      * Update admin settings (nama, email, password).
      */
@@ -80,7 +80,7 @@ class AdminController extends Controller
         return redirect()->route('login')->with('success', 'Anda telah logout sebagai admin.');
     }
 
-    
+
     /**
      * Simpan produk baru.
      */
@@ -92,15 +92,19 @@ class AdminController extends Controller
             'product_sale_price' => 'nullable|numeric',
             'product_description' => 'nullable|string',
             'product_sku' => 'nullable|string|max:50',
-            'product_stock' => 'required|integer',
             'product_category' => 'required|string',
             'product_tags' => 'nullable|string',
-            'product_sizes' => 'nullable|string',
             'product_status' => 'required|string',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
             'product_main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'product_gallery_images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            // Variants array
+            'variants' => 'required|array|min:1',
+            'variants.*.size' => 'required|string|max:50',
+            'variants.*.color_name' => 'nullable|string|max:50',
+            'variants.*.color_hex' => 'nullable|string|max:7',
+            'variants.*.stock' => 'required|integer|min:0',
         ]);
 
         // Cari atau buat category
@@ -122,15 +126,25 @@ class AdminController extends Controller
             'meta_description' => $validated['meta_description'] ?? null,
         ]);
 
-        // Simpan variant (harga, stock, sku)
-        ProductVariants::create([
-            'product_id' => $product->id,
-            'sku' => $validated['product_sku'] ?? null,
-            'price' => $validated['product_price'],
-            'sale_price' => $validated['product_sale_price'] ?? null,
-            'stock' => $validated['product_stock'],
-            'size' => $validated['product_sizes'] ?? null,
-        ]);
+        // Simpan semua variant (size + warna + stok)
+        foreach ($validated['variants'] as $index => $v) {
+            $hex = $v['color_hex'] ?? null;
+            if ($hex && !preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) $hex = null;
+            $sku = !empty($validated['product_sku'])
+                ? substr($validated['product_sku'] . '-' . $product->id . '-' . Str::slug(($v['size'] ?? '') . '-' . ($v['color_name'] ?? '') . '-' . $index), 0, 100)
+                : null;
+
+            ProductVariants::create([
+                'product_id' => $product->id,
+                'sku' => $sku,
+                'price' => $validated['product_price'],
+                'sale_price' => $validated['product_sale_price'] ?? null,
+                'stock' => $v['stock'],
+                'size' => $v['size'],
+                'color_name' => $v['color_name'] ?? null,
+                'color_hex' => $hex,
+            ]);
+        }
 
         // Simpan gambar utama
         if ($request->hasFile('product_main_image')) {
@@ -165,20 +179,13 @@ class AdminController extends Controller
             ->with('success', 'Produk berhasil ditambahkan!');
     }
 
-    public function dashboard()
-    {
-        $landingImages = \App\Models\LandingImage::all();
-        return view('admin', [
-            'landingImages' => $landingImages,
-        ]);
-    }
 
     /**
      * Daftar produk dengan paginasi.
      */
     public function products()
     {
-        $products = Products::with(['variants', 'primaryImage', 'category'])->latest()->paginate(10);
+        $products = Products::query()->with(['variants', 'primaryImage', 'category'])->latest()->paginate(10);
         return view('admin.tabs.products', compact('products'));
     }
 
@@ -196,8 +203,35 @@ class AdminController extends Controller
      */
     public function orders()
     {
-        $orders = Order::with(['user', 'items'])->latest()->paginate(10);
+        $orders = Order::query()->with(['user', 'items'])->latest()->paginate(10);
         return view('admin.tabs.orders', compact('orders'));
+    }
+
+    /**
+     * Update status order & resi.
+     */
+    public function updateOrderStatus(Request $request, Order $order)
+    {
+        $validated = $request->validate([
+            'status' => 'required|in:waiting_payment,processing,shipped,completed,cancelled',
+            'resi'   => 'nullable|string|max:100',
+        ]);
+
+        $order->status = $validated['status'];
+        if (array_key_exists('resi', $validated)) {
+            $order->resi = $validated['resi'];
+        }
+        $order->save();
+
+        ActivityLog::create([
+            'type'        => 'order',
+            'action'      => 'updated',
+            'user_id'     => auth()->id(),
+            'description' => 'Updated order #' . $order->order_number . ' to ' . $validated['status'],
+        ]);
+
+        return redirect()->to(route('admin.dashboard', [], false) . '#orders')
+            ->with('success', 'Status order #' . $order->order_number . ' berhasil diupdate!');
     }
 
     /**
@@ -211,15 +245,20 @@ class AdminController extends Controller
             'product_sale_price' => 'nullable|numeric',
             'product_description' => 'nullable|string',
             'product_sku' => 'nullable|string|max:50',
-            'product_stock' => 'required|integer',
             'product_category' => 'required|string',
             'product_tags' => 'nullable|string',
-            'product_sizes' => 'nullable|string',
             'product_status' => 'required|string',
             'meta_title' => 'nullable|string|max:255',
             'meta_description' => 'nullable|string',
             'product_main_image' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
             'product_gallery_images.*' => 'nullable|image|mimes:jpg,jpeg,png,webp|max:2048',
+            // Variants array
+            'variants' => 'required|array|min:1',
+            'variants.*.id' => 'nullable|integer',
+            'variants.*.size' => 'required|string|max:50',
+            'variants.*.color_name' => 'nullable|string|max:50',
+            'variants.*.color_hex' => 'nullable|string|max:7',
+            'variants.*.stock' => 'required|integer|min:0',
         ]);
 
         $product = Products::findOrFail($id);
@@ -243,25 +282,42 @@ class AdminController extends Controller
             'meta_description' => $validated['meta_description'] ?? null,
         ]);
 
-        // Update atau buat variant
-        $variant = ProductVariants::where('product_id', $product->id)->first();
-        if ($variant) {
-            $variant->update([
-                'sku' => $validated['product_sku'] ?? null,
-                'price' => $validated['product_price'],
-                'sale_price' => $validated['product_sale_price'] ?? null,
-                'stock' => $validated['product_stock'],
-                'size' => $validated['product_sizes'] ?? null,
-            ]);
-        } else {
-            ProductVariants::create([
+        // Sync variants: update existing, create new, delete removed
+        $incomingIds = collect($validated['variants'])->pluck('id')->filter()->toArray();
+
+        // Hapus variant yang tidak ada di input lagi (yang tidak direferensi order)
+        $product->variants()
+            ->whereNotIn('id', $incomingIds)
+            ->whereDoesntHave('orderItems')
+            ->delete();
+
+        foreach ($validated['variants'] as $index => $v) {
+            $hex = $v['color_hex'] ?? null;
+            if ($hex && !preg_match('/^#[0-9A-Fa-f]{6}$/', $hex)) $hex = null;
+            $sku = !empty($validated['product_sku'])
+                ? substr($validated['product_sku'] . '-' . $product->id . '-' . Str::slug(($v['size'] ?? '') . '-' . ($v['color_name'] ?? '') . '-' . $index), 0, 100)
+                : null;
+
+            $variantData = [
                 'product_id' => $product->id,
-                'sku' => $validated['product_sku'] ?? null,
+                'sku' => $sku,
                 'price' => $validated['product_price'],
                 'sale_price' => $validated['product_sale_price'] ?? null,
-                'stock' => $validated['product_stock'],
-                'size' => $validated['product_sizes'] ?? null,
-            ]);
+                'stock' => $v['stock'],
+                'size' => $v['size'],
+                'color_name' => $v['color_name'] ?? null,
+                'color_hex' => $hex,
+            ];
+
+            if (!empty($v['id'])) {
+                // Update existing variant
+                ProductVariants::where('id', $v['id'])
+                    ->where('product_id', $product->id)
+                    ->update($variantData);
+            } else {
+                // Create new variant
+                ProductVariants::create($variantData);
+            }
         }
 
         // Update gambar utama jika ada

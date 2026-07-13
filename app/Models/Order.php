@@ -9,14 +9,10 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Order extends Model
 {
-    protected $table = 'orders';
-    use HasFactory; // <-- 3. Gunakan trait di dalam class
+    use HasFactory;
 
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<int, string>
-     */
+    protected $table = 'orders';
+
     protected $fillable = [
         'user_id',
         'order_number',
@@ -29,16 +25,15 @@ class Order extends Model
         'status',
         'payment_due_at',
         'payment_token',
+        'courier',
+        'resi',
     ];
 
-     public function user(): BelongsTo
+    public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * Mendefinisikan bahwa sebuah pesanan memiliki banyak item.
-     */
     public function items(): HasMany
     {
         return $this->hasMany(OrderItem::class);
@@ -48,5 +43,4 @@ class Order extends Model
     {
         return $this->hasMany(\App\Models\OrderReturn::class, 'order_id');
     }
-
 }

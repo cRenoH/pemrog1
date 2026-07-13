@@ -95,6 +95,9 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
     Route::patch('/products/{id}', [AdminController::class, 'update'])->name('admin.products.update');
     Route::delete('/products/{id}', [AdminController::class, 'destroy'])->name('admin.products.destroy');
 
+    // Order Management (Admin)
+    Route::patch('/orders/{order}/status', [AdminController::class, 'updateOrderStatus'])->name('admin.orders.update-status');
+
     // User Management
     Route::patch('/users/{user}/lock', [AdminController::class, 'lockUser'])->name('admin.users.lock');
     Route::patch('/users/{user}/ban', [AdminController::class, 'banUser'])->name('admin.users.ban');

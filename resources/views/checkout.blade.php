@@ -568,6 +568,16 @@
                                 </ul>
                             </div>
                         @endif
+                        @if(!empty($stockErrors))
+                            <div style="padding:15px;margin-bottom:20px;border:1px solid #ffc107;border-radius:8px;background:#fff8e1;color:#856404;">
+                                <strong><i class="fas fa-exclamation-triangle"></i> Perhatian stok:</strong>
+                                <ul style="margin:8px 0 0;padding-left:20px;">
+                                    @foreach($stockErrors as $se)
+                                        <li>{{ $se }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <!-- Customer Information -->
                         <div class="form-section">
                             <h4><i class="fas fa-user-circle"></i> Customer Information</h4>

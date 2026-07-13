@@ -14,7 +14,7 @@ use Database\Factories\OrdersFactory;
 use Illuminate\Support\Facades\Schema;
 
 class DatabaseSeeder extends Seeder
-{
+{ 
     /**
      * Seed the application's database.
      */
@@ -24,13 +24,12 @@ class DatabaseSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
         
          $this->call([
-            ProductSeeder::class, // <-- TAMBAHKAN BARIS INI
-            ProductImageSeed::class, // <-- TAMBAHKAN BARIS INI
-            ProductVariantSeeder::class, // <-- TAMBAHKAN BARIS INI
+            ProductSeeder::class, 
+            ProductImageSeed::class, 
+            ProductVariantSeeder::class,
             Categories::class,
             UserSeeder::class,
-             // <-- TAMBAHKAN BARIS INI
-            // Anda bisa menambahkan seeder lain di sini jika ada
+            
         ]);
 
         

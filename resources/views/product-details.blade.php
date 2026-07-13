@@ -775,9 +775,19 @@
                             <label class="option-label" for="sizeOptions">Size:</label>
                             <div class="size-options" id="sizeOptions">
                                 @foreach ($product->variants as $variant)
-                                    <span class="size-option {{ $loop->first ? 'active' : '' }}" data-size="{{ $variant->size }}" data-variant-id="{{ $variant->id }}">{{ $variant->size }}</span>
+                                    <span class="size-option {{ $loop->first ? 'active' : '' }} {{ $variant->stock <= 0 ? 'out-of-stock' : '' }}"
+                                        data-size="{{ $variant->size }}"
+                                        data-variant-id="{{ $variant->id }}"
+                                        data-stock="{{ $variant->stock }}"
+                                        style="{{ $variant->stock <= 0 ? 'opacity:0.4;cursor:not-allowed;text-decoration:line-through;' : '' }}">
+                                        {{ $variant->size }}
+                                        @if($variant->stock <= 0)
+                                            <small style="font-size:0.7em;display:block;">Habis</small>
+                                        @endif
+                                    </span>
                                 @endforeach
                             </div>
+                            <small id="stockInfo" style="color:#888;margin-top:6px;display:block;">Stok tersedia: <strong id="stockCount">{{ $product->variants->first()?->stock ?? 0 }}</strong></small>
                         </div>
                     </div>
 
@@ -785,9 +795,10 @@
                         <label class="option-label" for="quantity">Quantity:</label>
                         <div class="quantity-input-group">
                             <button type="button" class="quantity-minus" aria-label="Decrease quantity">-</button>
-                            <input type="number" id="quantity" name="quantity" value="1" min="1" aria-label="Product quantity" readonly style="width:50px; text-align:center;">
+                            <input type="number" id="quantity" name="quantity" value="1" min="1" max="{{ $product->variants->first()?->stock ?? 1 }}" aria-label="Product quantity" readonly style="width:50px; text-align:center;">
                             <button type="button" class="quantity-plus" aria-label="Increase quantity">+</button>
                         </div>
+                        <small id="maxQtyNote" style="color:#e53637;margin-left:10px;display:none;">Maksimal <span id="maxQtyVal"></span> item</small>
                     </div>
 
                     <div class="product-actions-detail">
@@ -1094,18 +1105,39 @@
                 });
             });
 
-            // Quantity selector
+            // Quantity selector dengan max stok
             if (quantityMinus && quantityPlus && quantityInput) {
                 quantityMinus.addEventListener('click', function () {
                     let currentValue = parseInt(quantityInput.value);
                     if (currentValue > 1) {
                         quantityInput.value = currentValue - 1;
+                        syncQtyToForms();
                     }
                 });
                 quantityPlus.addEventListener('click', function () {
                     let currentValue = parseInt(quantityInput.value);
-                    quantityInput.value = currentValue + 1;
+                    let maxStock = parseInt(quantityInput.max) || 1;
+                    if (currentValue < maxStock) {
+                        quantityInput.value = currentValue + 1;
+                        syncQtyToForms();
+                    } else {
+                        const note = document.getElementById('maxQtyNote');
+                        const maxVal = document.getElementById('maxQtyVal');
+                        if (note && maxVal) {
+                            maxVal.textContent = maxStock;
+                            note.style.display = 'inline';
+                            setTimeout(() => { note.style.display = 'none'; }, 2000);
+                        }
+                    }
                 });
+            }
+
+            function syncQtyToForms() {
+                const qty = quantityInput ? quantityInput.value : 1;
+                const qtyInput = document.getElementById('selectedQtyInput');
+                const qtyInputCheckout = document.getElementById('selectedQtyInputCheckout');
+                if (qtyInput) qtyInput.value = qty;
+                if (qtyInputCheckout) qtyInputCheckout.value = qty;
             }
 
             // Add to Cart button
@@ -1276,18 +1308,60 @@
                 });
             });
 
-            // Jika ada JS untuk update size/variant, tambahkan update input variant_id juga
+            // Size pilih: update variant_id, stok max, reset qty
             const sizeOptions = document.querySelectorAll('.size-option');
             const variantIdInputCheckout = document.getElementById('selectedVariantIdInputCheckout');
-            if (sizeOptions && variantIdInputCheckout) {
+            const selectedSizeInput = document.getElementById('selectedSizeInput');
+            const selectedSizeInputCheckout = document.getElementById('selectedSizeInputCheckout');
+            const stockCount = document.getElementById('stockCount');
+            const addToCartBtn = document.querySelector('#addToCartForm button[type="submit"]');
+            const checkoutBtn = document.querySelector('#checkoutForm button[type="submit"]');
+
+            if (sizeOptions) {
                 sizeOptions.forEach(option => {
                     option.addEventListener('click', function() {
+                        // Jangan proses kalau stok habis
+                        if (this.classList.contains('out-of-stock')) return;
+
+                        sizeOptions.forEach(o => o.classList.remove('active'));
+                        this.classList.add('active');
+
                         const variantId = this.getAttribute('data-variant-id');
-                        if (variantId) {
-                            variantIdInputCheckout.value = variantId;
+                        const size = this.getAttribute('data-size');
+                        const stock = parseInt(this.getAttribute('data-stock')) || 0;
+
+                        // Update hidden inputs
+                        if (variantIdInputCheckout) variantIdInputCheckout.value = variantId;
+                        if (selectedSizeInput) selectedSizeInput.value = size;
+                        if (selectedSizeInputCheckout) selectedSizeInputCheckout.value = size;
+
+                        // Update max quantity & reset ke 1
+                        if (quantityInput) {
+                            quantityInput.max = stock;
+                            quantityInput.value = stock > 0 ? 1 : 0;
+                            syncQtyToForms();
                         }
+
+                        // Update tampilan stok
+                        if (stockCount) stockCount.textContent = stock;
+
+                        // Disable/enable tombol cart & checkout berdasar stok
+                        const outOfStock = stock <= 0;
+                        if (addToCartBtn) addToCartBtn.disabled = outOfStock;
+                        if (checkoutBtn) checkoutBtn.disabled = outOfStock;
                     });
                 });
+            }
+
+            // Init: cek stok varian pertama saat load
+            const firstSize = document.querySelector('.size-option.active');
+            if (firstSize) {
+                const initStock = parseInt(firstSize.getAttribute('data-stock')) || 0;
+                if (quantityInput) quantityInput.max = initStock;
+                if (stockCount) stockCount.textContent = initStock;
+                const outOfStock = initStock <= 0;
+                if (addToCartBtn) addToCartBtn.disabled = outOfStock;
+                if (checkoutBtn) checkoutBtn.disabled = outOfStock;
             }
 
         });

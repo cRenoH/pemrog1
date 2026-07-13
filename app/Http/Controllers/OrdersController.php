@@ -10,13 +10,14 @@ use Illuminate\Http\Request;
 use App\Models\ProductVariants;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Database\Eloquent\Builder;
 
 class OrdersController extends Controller
 {
     // Fungsi untuk MENAMBAH item ke keranjang
     public function add(Request $request)
     {
-        // Jika request mengirim size dan product_id, cari variant_id
+        // Resolve variant
         if ($request->filled('size') && $request->filled('product_id')) {
             $variant = ProductVariants::where('product_id', $request->product_id)
                 ->where('size', $request->size)
@@ -26,24 +27,39 @@ class OrdersController extends Controller
             }
             $variantId = $variant->id;
         } else {
-            // Fallback: tetap support variant_id langsung
             $request->validate([
                 'variant_id' => 'required|exists:product_variants,id',
             ]);
             $variantId = $request->input('variant_id');
+            $variant = ProductVariants::findOrFail($variantId);
         }
+
+        $qty = max(1, (int) $request->input('qty', 1));
         $userId = Auth::id();
+
         $cartItem = Carts::where('user_id', $userId)
             ->where('product_variant_id', $variantId)
             ->first();
+
+        $currentQty = $cartItem ? $cartItem->quantity : 0;
+        $newQty = $currentQty + $qty;
+
+        // Validasi stok: tidak boleh melebihi stok tersedia
+        if ($variant->stock <= 0) {
+            return back()->with('error', 'Stok produk ini habis!');
+        }
+        if ($newQty > $variant->stock) {
+            return back()->with('error', 'Stok tidak mencukupi. Tersisa ' . $variant->stock . ' item untuk ukuran ' . ($variant->size ?? '') . '.');
+        }
+
         if ($cartItem) {
-            $cartItem->quantity += 1;
+            $cartItem->quantity = $newQty;
             $cartItem->save();
         } else {
             Carts::create([
                 'user_id' => $userId,
                 'product_variant_id' => $variantId,
-                'quantity' => 1,
+                'quantity' => $newQty,
             ]);
         }
         return back()->with('success', 'Produk berhasil ditambahkan ke keranjang!');
@@ -97,40 +113,58 @@ class OrdersController extends Controller
         // Buy now logic
         $productId = $request->query('product_id');
         $variantId = $request->query('variant_id');
-        $qty = $request->query('qty', 1);
+        $qty = max(1, (int) $request->query('qty', 1));
         $items = [];
+        $stockErrors = [];
+
         if ($productId && $variantId) {
             $variant = ProductVariants::with('product.primaryImage')->find($variantId);
             if ($variant && $variant->product_id == $productId) {
+                // Validasi stok buy now
+                if ($qty > $variant->stock) {
+                    $qty = $variant->stock;
+                }
                 $items[] = [
                     'product' => $variant->product,
                     'variant' => $variant,
                     'quantity' => $qty,
                 ];
-                // Simpan referensi ke session (ID saja, bukan objek)
                 session(['buy_now' => [
-                    ['variant_id' => $variant->id, 'quantity' => (int)$qty],
+                    ['variant_id' => $variant->id, 'quantity' => $qty],
                 ]]);
             }
         } else {
-            // Cart logic
             $cartItems = Carts::where('user_id', $user->id)
                 ->with('productVariant.product.primaryImage')
                 ->get();
             foreach ($cartItems as $cart) {
+                $variant = $cart->productVariant;
+                $qty = $cart->quantity;
+                // Validasi stok cart
+                if ($variant->stock <= 0) {
+                    $stockErrors[] = ($variant->product->name ?? 'Produk') . ' ukuran ' . $variant->size . ' stok habis.';
+                    continue;
+                }
+                if ($qty > $variant->stock) {
+                    $qty = $variant->stock;
+                    $cart->quantity = $qty;
+                    $cart->save();
+                    $stockErrors[] = ($variant->product->name ?? 'Produk') . ' ukuran ' . $variant->size . ' qty disesuaikan ke ' . $qty . ' (stok tersisa).';
+                }
                 $items[] = [
-                    'product' => $cart->productVariant->product,
-                    'variant' => $cart->productVariant,
-                    'quantity' => $cart->quantity,
+                    'product' => $variant->product,
+                    'variant' => $variant,
+                    'quantity' => $qty,
                 ];
             }
-            // Hapus session buy_now jika checkout dari cart
             session()->forget('buy_now');
         }
+
         return view('checkout', [
             'items' => $items,
             'addresses' => $addresses,
             'couriers' => $couriers,
+            'stockErrors' => $stockErrors,
         ]);
     }
 
@@ -221,69 +255,96 @@ class OrdersController extends Controller
         $courier = $checkout['courier'];
         $paymentMethod = $checkout['paymentMethod'];
 
-        // Query ulang varian dari ID referensi
-        $variantIds = collect($checkout['item_refs'])->pluck('variant_id')->toArray();
-        $variants = ProductVariants::whereIn('id', $variantIds)->get()->keyBy('id');
+        try {
+            $order = DB::transaction(function () use ($checkout, $user, $address, $courier, $paymentMethod) {
+                // Lock semua varian yang terlibat untuk mencegah race condition
+                $variantIds = collect($checkout['item_refs'])->pluck('variant_id')->toArray();
+                /** @var \Illuminate\Database\Eloquent\Collection<int, ProductVariants> $variants */
+                $variants = ProductVariants::query()
+                    ->whereIn('id', $variantIds)
+                    ->lockForUpdate()
+                    ->get()
+                    ->keyBy('id');
 
-        // Hitung subtotal
-        $subtotal = 0;
-        $orderItemsData = [];
-        foreach ($checkout['item_refs'] as $ref) {
-            $variant = $variants[$ref['variant_id']] ?? null;
-            if ($variant) {
-                $price = $variant->sale_price ?? $variant->price;
-                $subtotal += $price * $ref['quantity'];
-                $orderItemsData[] = [
-                    'variant_id' => $variant->id,
-                    'quantity' => $ref['quantity'],
-                    'price' => $price,
-                ];
-            }
+                // Validasi stok sebelum proses
+                $stockErrors = [];
+                foreach ($checkout['item_refs'] as $ref) {
+                    $variant = $variants[$ref['variant_id']] ?? null;
+                    if (!$variant) {
+                        $stockErrors[] = 'Varian produk tidak ditemukan (ID: ' . $ref['variant_id'] . ').';
+                        continue;
+                    }
+                    if ($ref['quantity'] > $variant->stock) {
+                        $stockErrors[] = 'Stok ' . ($variant->size ?? 'produk') . ' tidak mencukupi. Tersisa ' . $variant->stock . ', diminta ' . $ref['quantity'] . '.';
+                    }
+                }
+
+                if (!empty($stockErrors)) {
+                    throw new \Exception(implode(' | ', $stockErrors));
+                }
+
+                // Hitung subtotal & kurangi stok
+                $subtotal = 0;
+                $orderItemsData = [];
+                foreach ($checkout['item_refs'] as $ref) {
+                    $variant = $variants[$ref['variant_id']];
+                    $price = $variant->sale_price ?? $variant->price;
+                    $subtotal += $price * $ref['quantity'];
+                    $orderItemsData[] = [
+                        'variant_id' => $variant->id,
+                        'quantity' => $ref['quantity'],
+                        'price' => $price,
+                    ];
+                    // Kurangi stok secara atomic
+                    $variant->decrement('stock', $ref['quantity']);
+                }
+
+                $shipping = 18000;
+                $total = $subtotal + $shipping;
+                $orderNumber = 'ORD-' . date('Ymd-His') . '-' . strtoupper(substr(uniqid(), -5));
+
+                $order = Order::create([
+                    'user_id' => $user->id,
+                    'order_number' => $orderNumber,
+                    'subtotal' => $subtotal,
+                    'shipping_cost' => $shipping,
+                    'discount_amount' => 0,
+                    'total_amount' => $total,
+                    'shipping_address' => $address->full_address . ', ' . $address->city . ', ' . $address->province . ', ' . $address->postal_code,
+                    'payment_method' => $paymentMethod,
+                    'status' => 'processing',
+                    'courier' => $courier,
+                ]);
+
+                $bulkInsertData = [];
+                foreach ($orderItemsData as $itemData) {
+                    $bulkInsertData[] = [
+                        'order_id' => $order->id,
+                        'variant_id' => $itemData['variant_id'],
+                        'quantity' => $itemData['quantity'],
+                        'price' => $itemData['price'],
+                    ];
+                }
+                OrderItem::insert($bulkInsertData);
+
+                $order->resi = 'RESI-' . $order->id . '-' . strtoupper(substr(uniqid(), -4));
+                $order->save();
+
+                return $order;
+            });
+
+        } catch (\Exception $e) {
+            session()->forget('checkout');
+            return redirect()->route('checkout')->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
 
-        $shipping = 18000;
-        $total = $subtotal + $shipping;
-
-        // Buat order number unik
-        $orderNumber = 'ORD-' . date('Ymd-His') . '-' . strtoupper(substr(uniqid(), -5));
-
-        // Simpan order
-        $order = Order::create([
-            'user_id' => $user->id,
-            'order_number' => $orderNumber,
-            'subtotal' => $subtotal,
-            'shipping_cost' => $shipping,
-            'discount_amount' => 0,
-            'total_amount' => $total,
-            'shipping_address' => $address->full_address . ', ' . $address->city . ', ' . $address->province . ', ' . $address->postal_code,
-            'payment_method' => $paymentMethod,
-            'status' => 'processing',
-            'courier' => $courier,
-        ]);
-
-        // Simpan order items menggunakan bulk insert (1 query)
-        $bulkInsertData = [];
-        foreach ($orderItemsData as $itemData) {
-            $bulkInsertData[] = [
-                'order_id' => $order->id,
-                'variant_id' => $itemData['variant_id'],
-                'quantity' => $itemData['quantity'],
-                'price' => $itemData['price'],
-            ];
-        }
-        OrderItem::insert($bulkInsertData);
-
-        // Generate nomor resi otomatis
-        $order->resi = 'RESI-' . $order->id . '-' . strtoupper(substr(uniqid(), -4));
-        $order->save();
-
-        // Jika checkout dari cart (bukan buy now), kosongkan cart user
-        if (!session('buy_now')) {
+        // Kosongkan cart jika bukan buy now
+        $wasBuyNow = session()->has('buy_now');
+        session()->forget(['checkout', 'buy_now']);
+        if (!$wasBuyNow) {
             Carts::where('user_id', $user->id)->delete();
         }
 
-        // Hapus session checkout
-        session()->forget('checkout');
         return redirect()->route('invoice', ['order' => $order->id]);
     }
 

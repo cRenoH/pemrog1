@@ -42,7 +42,7 @@ class Products extends Model
         return $this->hasOne(ProductImages::class, 'product_id')->where('is_primary', 1);
     }
 
-    public function variants()
+    public function variants(): \Illuminate\Database\Eloquent\Relations\HasMany
     {
         return $this->hasMany(ProductVariants::class, 'product_id');
     }
