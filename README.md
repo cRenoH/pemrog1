@@ -1,61 +1,191 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
-
 <p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+  <img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="300" alt="Laravel Logo">
 </p>
 
-## About Laravel
+<h1 align="center">🛍️ Darimata — E-Commerce Fashion</h1>
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+<p align="center">
+  Aplikasi belanja fashion berbasis web, dibangun dengan Laravel 12 + Blade Template Engine.
+</p>
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+<p align="center">
+  <img src="https://img.shields.io/badge/Laravel-12.x-red?style=flat-square&logo=laravel" alt="Laravel">
+  <img src="https://img.shields.io/badge/PHP-8.2+-blue?style=flat-square&logo=php" alt="PHP">
+  <img src="https://img.shields.io/badge/MySQL-Database-orange?style=flat-square&logo=mysql" alt="MySQL">
+  <img src="https://img.shields.io/badge/Vite-Bundler-purple?style=flat-square&logo=vite" alt="Vite">
+  <img src="https://img.shields.io/badge/License-MIT-green?style=flat-square" alt="License">
+</p>
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+## 📖 Tentang Project
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+**Darimata** adalah aplikasi e-commerce fashion yang memungkinkan pengguna untuk berbelanja produk pakaian secara online. Fitur utama meliputi manajemen produk dengan varian ukuran & warna, keranjang belanja, sistem checkout multi-langkah, pembayaran, hingga retur barang.
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+### Fitur Utama
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+**Untuk Pembeli (User)**
+- Registrasi & login akun
+- Katalog produk dengan pencarian & filter
+- Detail produk dengan varian ukuran dan warna
+- Keranjang belanja & Buy Now
+- Wishlist produk
+- Checkout dengan pilihan alamat, kurir, dan metode bayar
+- Invoice & riwayat pesanan
+- Pengajuan retur barang
+- Manajemen profil & multiple alamat pengiriman
 
-## Laravel Sponsors
+**Untuk Admin**
+- Dashboard statistik (stok, pesanan, pengguna)
+- Manajemen produk (tambah, edit, hapus + upload gambar)
+- Manajemen varian produk (ukuran, warna, stok)
+- Update status pesanan & nomor resi
+- Manajemen user (lock, ban, ubah role)
+- Activity log (audit trail semua aksi admin)
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## ⚙️ Tech Stack
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+| Layer | Teknologi |
+|---|---|
+| Backend | PHP 8.2+, Laravel 12 |
+| Frontend | Blade Template Engine, Vanilla CSS, Vite |
+| Database | MySQL |
+| Server (Dev) | Laragon (Apache + MySQL) |
+| Testing | PestPHP |
+| Auth | Laravel built-in Auth + Middleware |
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 🚀 Cara Menjalankan Project
 
-## Code of Conduct
+### Prasyarat
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+- PHP >= 8.2
+- Composer
+- Node.js & NPM
+- MySQL (via Laragon atau sejenisnya)
 
-## Security Vulnerabilities
+### Langkah Instalasi
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+**1. Clone repository**
+```bash
+git clone <url-repo> projdarimata1
+cd projdarimata1
+```
 
-## License
+**2. Install dependensi PHP**
+```bash
+composer install
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+**3. Install dependensi Node**
+```bash
+npm install
+```
+
+**4. Konfigurasi environment**
+```bash
+cp .env.example .env
+php artisan key:generate
+```
+
+Edit file `.env` dan sesuaikan koneksi database:
+```env
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=darimata
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+**5. Buat database**
+
+Di MySQL / phpMyAdmin:
+```sql
+CREATE DATABASE darimata;
+```
+
+**6. Jalankan migrasi & seeder**
+```bash
+php artisan migrate
+php artisan db:seed
+```
+
+**7. Buat symlink storage**
+```bash
+php artisan storage:link
+```
+
+**8. Jalankan aplikasi**
+
+Opsi A — via Laragon (direkomendasikan):
+```
+Akses: http://projdarimata1.test
+```
+
+Opsi B — via Artisan + Vite:
+```bash
+# Terminal 1
+php artisan serve
+
+# Terminal 2
+npm run dev
+```
+
+Opsi C — satu perintah (via composer script):
+```bash
+composer run dev
+```
+
+---
+
+## 🗂️ Struktur Folder Penting
+
+```
+app/
+├── Http/
+│   ├── Controllers/
+│   │   ├── AdminController.php       # Dashboard & manajemen admin
+│   │   ├── OrdersController.php      # Keranjang, checkout, payment, invoice
+│   │   ├── ShopController.php        # Katalog & detail produk
+│   │   ├── LoginController.php       # Autentikasi
+│   │   ├── RegisterController.php    # Registrasi
+│   │   ├── UserProfileController.php # Profil & alamat user
+│   │   └── WishlistController.php    # Wishlist
+│   └── IsAdmin.php                   # Middleware is_admin
+└── Models/                           # 19 Eloquent Model
+
+database/
+├── migrations/                       # 23 file migrasi
+└── seeders/                          # Data awal (produk, user, kategori)
+
+resources/views/                      # Blade templates
+routes/
+└── web.php                           # Semua route aplikasi
+```
+
+---
+
+## 🗃️ Database
+
+Nama database: **`darimata`**
+
+Project ini menggunakan **23 tabel**, termasuk:
+`users`, `products`, `product_variants`, `product_images`, `categories`, `orders`, `order_items`, `order_returns`, `carts`, `addresses`, `wishlists`, `reviews`, `activity_logs`, `sessions`, dan lainnya.
+
+Lihat dokumentasi lengkap di [`rancangan/DOKUMENTASI_PROJECT.md`](rancangan/DOKUMENTASI_PROJECT.md).
+
+---
+
+## 🔐 Akses Default (setelah seeder)
+
+Setelah menjalankan `php artisan db:seed`, akun admin dan user sample tersedia. Cek file `database/seeders/UserSeeder.php` untuk detail kredensial.
+
+---
+
+## 📄 Lisensi
+
+Project ini menggunakan lisensi [MIT](https://opensource.org/licenses/MIT).
