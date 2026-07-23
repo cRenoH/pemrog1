@@ -152,10 +152,12 @@ class OrdersController extends Controller
                     $stockErrors[] = ($variant->product->name ?? 'Produk') . ' ukuran ' . $variant->size . ' qty disesuaikan ke ' . $qty . ' (stok tersisa).';
                 }
                 $items[] = [
-                    'product' => $variant->product,
-                    'variant' => $variant,
+                    'product'  => $variant->product,
+                    'variant'  => $variant,
                     'quantity' => $qty,
+                    'cart_id'  => $cart->id, // Bug 4 Fix: diperlukan untuk tombol hapus di checkout
                 ];
+
             }
             session()->forget('buy_now');
         }
@@ -197,11 +199,13 @@ class OrdersController extends Controller
         }
 
         // Simpan hanya ID referensi ke session checkout (bukan objek model)
+        // Sertakan flag is_buy_now agar bisa dibaca kembali di processPayment
         session(['checkout' => [
-            'item_refs' => $itemRefs,
+            'item_refs'  => $itemRefs,
             'address_id' => $address->id,
-            'courier' => $validated['courier'],
+            'courier'    => $validated['courier'],
             'paymentMethod' => $validated['paymentMethod'],
+            'is_buy_now' => (bool) $buyNowSession, // flag: apakah ini buy now atau dari cart
         ]]);
 
         // Hapus session buy_now setelah dipakai
@@ -338,8 +342,9 @@ class OrdersController extends Controller
             return redirect()->route('checkout')->with('error', 'Gagal memproses pesanan: ' . $e->getMessage());
         }
 
-        // Kosongkan cart jika bukan buy now
-        $wasBuyNow = session()->has('buy_now');
+        // Kosongkan cart hanya jika ini bukan transaksi "buy now"
+        // Flag is_buy_now dibaca dari checkout session sebelum dihapus
+        $wasBuyNow = session('checkout.is_buy_now', false);
         session()->forget(['checkout', 'buy_now']);
         if (!$wasBuyNow) {
             Carts::where('user_id', $user->id)->delete();
@@ -364,9 +369,57 @@ class OrdersController extends Controller
 
     public function rateOrder(Request $request, $order)
     {
-        // TODO: Implement product rating logic
-        return back()->with('success', 'Terima kasih atas rating Anda!');
+        $order = Order::with('items.variant')->findOrFail($order);
+
+        if ($order->user_id !== Auth::id()) {
+            abort(403);
+        }
+
+        if ($order->status !== 'selesai') {
+            return back()->with('error', 'Ulasan hanya bisa diberikan pada pesanan yang sudah selesai.');
+        }
+
+        $request->validate([
+            'ratings'   => 'required|array',
+            'ratings.*' => 'integer|min:1|max:5',
+            'comments'  => 'nullable|array',
+            'comments.*' => 'nullable|string|max:1000',
+        ]);
+
+        $savedCount = 0;
+        foreach ($order->items as $item) {
+            $productId = $item->variant->product_id ?? null;
+            if (!$productId) continue;
+
+            $rating  = $request->input("ratings.{$productId}");
+            $comment = $request->input("comments.{$productId}");
+
+            if (!$rating) continue;
+
+            // Satu review per user per produk
+            $alreadyReviewed = \App\Models\Reviews::where('user_id', Auth::id())
+                ->where('product_id', $productId)
+                ->exists();
+
+            if ($alreadyReviewed) continue;
+
+            \App\Models\Reviews::create([
+                'user_id'    => Auth::id(),
+                'product_id' => $productId,
+                'rating'     => $rating,
+                'comment'    => $comment,
+                'status'     => 'Pending',
+            ]);
+            $savedCount++;
+        }
+
+        if ($savedCount > 0) {
+            return back()->with('success', 'Terima kasih! ' . $savedCount . ' ulasan berhasil dikirim dan sedang menunggu moderasi.');
+        }
+
+        return back()->with('info', 'Tidak ada ulasan baru yang disimpan (mungkin sudah pernah diulas).');
     }
+
 
     public function requestReturn(Request $request, $orderId)
     {
@@ -426,9 +479,10 @@ class OrdersController extends Controller
     /**
      * Halaman invoice — hanya bisa diakses oleh pemilik order.
      */
-    public function invoice($orderId)
+    public function invoice($order)
     {
-        $order = Order::with(['items.variant', 'user'])->findOrFail($orderId);
+        // Eager load items.variant.product agar data produk tersedia di view invoice
+        $order = Order::with(['items.variant.product', 'user'])->findOrFail($order);
 
         // Pastikan hanya pemilik order yang bisa melihat invoice
         if ($order->user_id !== Auth::id()) {

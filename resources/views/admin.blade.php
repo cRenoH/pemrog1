@@ -569,6 +569,16 @@
                     </a>
                 </li>
                 <li class="nav-item">
+                    <a class="nav-link" data-tab="reviews" href="#" id="reviewsNavLink">
+                        <i class="fas fa-star"></i>
+                        <span>Reviews
+                            @if(isset($totalPendingReviews) && $totalPendingReviews > 0)
+                                <span class="badge badge-danger ml-1" style="font-size:0.7rem;padding:2px 6px;border-radius:99px;background:#ef233c;color:#fff;">{{ $totalPendingReviews }}</span>
+                            @endif
+                        </span>
+                    </a>
+                </li>
+                <li class="nav-item">
                     <a class="nav-link" data-tab="settings" href="#">
                         <i class="fas fa-cog"></i>
                         <span>Settings</span>
@@ -964,6 +974,145 @@
             </div>
         </div>
     </div>
+
+<!-- Reviews Tab -->
+<div class="tab-pane" id="tab-reviews">
+    <div class="page-header">
+        <h1 class="page-title">Manajemen Ulasan</h1>
+    </div>
+
+    {{-- Success message --}}
+    @if(session('success'))
+        <div class="alert alert-success" style="background:#e8f7ee;border:1px solid #b2e3c5;color:#1a7a42;border-radius:10px;padding:12px 18px;margin-bottom:20px;">
+            <i class="fas fa-check-circle mr-2"></i> {{ session('success') }}
+        </div>
+    @endif
+
+    {{-- PENDING REVIEWS --}}
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="mb-3" style="color:#f8961e;"><i class="fas fa-hourglass-half mr-2"></i>Ulasan Menunggu Moderasi ({{ $pendingReviews->total() ?? 0 }})</h5>
+            @if($pendingReviews->count() > 0)
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Produk</th>
+                            <th>User</th>
+                            <th>Rating</th>
+                            <th>Komentar</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($pendingReviews as $review)
+                        <tr>
+                            <td><strong>{{ $review->product->name ?? '-' }}</strong></td>
+                            <td>{{ $review->user->first_name ?? '-' }} {{ $review->user->last_name ?? '' }}</td>
+                            <td>
+                                @for($s=1;$s<=5;$s++)
+                                    <i class="{{ $s <= $review->rating ? 'fas' : 'far' }} fa-star" style="color:#f5a623;font-size:0.85rem;"></i>
+                                @endfor
+                                <span class="ml-1" style="font-size:0.85rem;color:#666;">{{ $review->rating }}/5</span>
+                            </td>
+                            <td style="max-width:250px;">
+                                <span style="font-size:0.9rem;color:#555;">{{ $review->comment ? Str::limit($review->comment, 80) : '<em style="color:#aaa;">Tidak ada komentar</em>' }}</span>
+                            </td>
+                            <td><small style="color:#888;">{{ $review->created_at->format('d M Y') }}</small></td>
+                            <td>
+                                <form action="{{ route('admin.reviews.approve', $review->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-success" title="Approve">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.reviews.reject', $review->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-warning" title="Reject">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.reviews.destroy', $review->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus ulasan ini?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+                {{ $pendingReviews->appends(['tab' => 'reviews'])->links() }}
+            </div>
+            @else
+                <p style="color:#aaa;text-align:center;padding:20px 0;"><i class="fas fa-check-circle mr-2" style="color:#4cc9f0;"></i>Tidak ada ulasan yang menunggu moderasi.</p>
+            @endif
+        </div>
+    </div>
+
+    {{-- APPROVED REVIEWS --}}
+    <div class="card">
+        <div class="card-body">
+            <h5 class="mb-3" style="color:#4cc9f0;"><i class="fas fa-check-circle mr-2"></i>Ulasan Terverifikasi ({{ $approvedReviews->total() ?? 0 }})</h5>
+            @if($approvedReviews->count() > 0)
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead>
+                        <tr>
+                            <th>Produk</th>
+                            <th>User</th>
+                            <th>Rating</th>
+                            <th>Komentar</th>
+                            <th>Tanggal</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($approvedReviews as $review)
+                        <tr>
+                            <td><strong>{{ $review->product->name ?? '-' }}</strong></td>
+                            <td>{{ $review->user->first_name ?? '-' }} {{ $review->user->last_name ?? '' }}</td>
+                            <td>
+                                @for($s=1;$s<=5;$s++)
+                                    <i class="{{ $s <= $review->rating ? 'fas' : 'far' }} fa-star" style="color:#f5a623;font-size:0.85rem;"></i>
+                                @endfor
+                            </td>
+                            <td style="max-width:250px;">
+                                <span style="font-size:0.9rem;color:#555;">{{ $review->comment ? Str::limit($review->comment, 80) : '<em style="color:#aaa;">Tidak ada komentar</em>' }}</span>
+                            </td>
+                            <td><small style="color:#888;">{{ $review->created_at->format('d M Y') }}</small></td>
+                            <td>
+                                <form action="{{ route('admin.reviews.reject', $review->id) }}" method="POST" style="display:inline;">
+                                    @csrf
+                                    <button type="submit" class="btn btn-sm btn-outline-warning" title="Reject">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </form>
+                                <form action="{{ route('admin.reviews.destroy', $review->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus ulasan ini?')">
+                                    @csrf @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <div class="d-flex justify-content-center mt-3">
+                {{ $approvedReviews->appends(['tab' => 'reviews'])->links() }}
+            </div>
+            @else
+                <p style="color:#aaa;text-align:center;padding:20px 0;">Belum ada ulasan yang diapprove.</p>
+            @endif
+        </div>
+    </div>
+</div>
 
 <!-- Settings Tab -->
 <div class="tab-pane" id="tab-settings">

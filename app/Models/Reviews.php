@@ -8,17 +8,30 @@ use Illuminate\Database\Eloquent\Model;
 class Reviews extends Model
 {
     use HasFactory;
-    protected $table = "reviews"; // Nama tabel yang sesuai di database
 
-    // Definisikan relasi dengan model Product jika diperlukan
+    protected $table = 'reviews';
+
+    protected $fillable = [
+        'user_id',
+        'product_id',
+        'rating',
+        'comment',
+        'status',
+    ];
+
+    /**
+     * Relasi ke produk.
+     */
     public function product()
     {
-        return $this->belongsTo('App\Models\Product', 'product_id');
+        return $this->belongsTo(Products::class, 'product_id');
     }
 
-    // Relasi ke user
+    /**
+     * Relasi ke user.
+     */
     public function user()
     {
-        return $this->belongsTo('App\\Models\\User', 'user_id');
+        return $this->belongsTo(User::class, 'user_id');
     }
 }

@@ -667,6 +667,80 @@
         .review-pagination .page-link { color: #0118d8; font-weight: 600; border: none; background: #f7f7f7; margin: 0 2px; border-radius: 6px; transition: background 0.2s, color 0.2s; min-width: 36px; min-height: 36px; display: flex; align-items: center; justify-content: center; font-size: 1.08em; }
         .review-pagination .page-link:hover, .review-pagination .page-item.active .page-link { background: #0118d8; color: #fff; }
         .review-pagination .page-item.disabled .page-link { color: #bbb; background: #f7f7f7; cursor: not-allowed; }
+
+        /* ====== REVIEW SECTION STYLES ====== */
+
+        /* Alert messages */
+        .review-alert { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-radius: 10px; margin-bottom: 20px; font-size: 0.97rem; font-weight: 500; }
+        .review-alert-success { background: #e8f7ee; color: #1a7a42; border: 1px solid #b2e3c5; }
+        .review-alert-error   { background: #fdf0f0; color: #c0392b; border: 1px solid #f5c6c6; }
+
+        /* Rating Overview */
+        .review-overview { display: flex; gap: 32px; align-items: center; background: #f8f9ff; border-radius: 14px; padding: 24px 28px; margin-bottom: 28px; border: 1px solid #e8eaff; }
+        .review-avg-block { text-align: center; min-width: 110px; }
+        .review-avg-score { font-size: 3.5rem; font-weight: 800; color: #0118d8; line-height: 1; }
+        .review-avg-stars { color: #f5a623; font-size: 1.2rem; margin: 6px 0 4px; letter-spacing: 2px; }
+        .review-avg-count { font-size: 0.82rem; color: #888; margin-top: 2px; }
+        .review-bars { flex: 1; }
+        .review-bar-row { display: flex; align-items: center; gap: 10px; margin-bottom: 7px; }
+        .review-bar-label { min-width: 38px; font-size: 0.85rem; color: #555; font-weight: 600; text-align: right; }
+        .review-bar-track { flex: 1; height: 8px; background: #e5e7ef; border-radius: 99px; overflow: hidden; }
+        .review-bar-fill { height: 100%; background: linear-gradient(90deg, #f5a623, #f7c948); border-radius: 99px; transition: width 0.6s cubic-bezier(.4,0,.2,1); }
+        .review-bar-count { min-width: 22px; font-size: 0.82rem; color: #888; }
+        @media (max-width: 600px) { .review-overview { flex-direction: column; gap: 18px; padding: 18px 16px; } }
+
+        /* Already reviewed */
+        .review-already-done { background: #f4f7ff; border: 1px solid #c7d3f9; border-radius: 10px; padding: 14px 18px; display: flex; align-items: center; flex-wrap: wrap; gap: 8px; font-size: 0.96rem; color: #444; margin-bottom: 20px; }
+        .review-badge-pending  { background: #fff3cd; color: #856404; border-radius: 6px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700; }
+        .review-badge-approved { background: #d1fae5; color: #065f46; border-radius: 6px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700; }
+        .review-badge-rejected { background: #fee2e2; color: #991b1b; border-radius: 6px; padding: 2px 10px; font-size: 0.78rem; font-weight: 700; }
+        .btn-review-delete { background: none; border: 1px solid #e53637; color: #e53637; border-radius: 6px; padding: 3px 10px; font-size: 0.8rem; cursor: pointer; transition: all 0.2s; }
+        .btn-review-delete:hover { background: #e53637; color: #fff; }
+
+        /* Review Form */
+        .review-form-wrapper { background: #fff; border: 1.5px solid #e0e5ff; border-radius: 14px; padding: 24px 28px; margin-bottom: 28px; box-shadow: 0 4px 18px rgba(1,24,216,0.05); }
+        .review-form-title { font-size: 1.1rem; font-weight: 700; color: #0118d8; margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+
+        /* Star Picker */
+        .star-rating-input { display: flex; align-items: center; gap: 14px; margin-bottom: 16px; }
+        .star-rating-label { font-weight: 600; color: #444; font-size: 0.95rem; min-width: 54px; }
+        .star-picker { display: flex; gap: 6px; }
+        .star-pick { font-size: 1.8rem; color: #ddd; cursor: pointer; transition: color 0.15s, transform 0.15s; }
+        .star-pick:hover, .star-pick.hovered, .star-pick.selected { color: #f5a623; }
+        .star-pick:hover { transform: scale(1.18); }
+        .star-rating-hint { font-size: 0.85rem; color: #888; font-style: italic; }
+
+        /* Textarea */
+        .review-textarea-wrap { position: relative; margin-bottom: 14px; }
+        .review-textarea { width: 100%; border: 1.5px solid #e0e0e0; border-radius: 10px; padding: 12px 14px; font-size: 0.96rem; font-family: inherit; resize: vertical; transition: border-color 0.2s; color: #333; min-height: 100px; }
+        .review-textarea:focus { outline: none; border-color: #0118d8; box-shadow: 0 0 0 3px rgba(1,24,216,0.08); }
+        .review-char-count { position: absolute; bottom: 10px; right: 14px; font-size: 0.78rem; color: #bbb; }
+        .review-field-error { color: #e53637; font-size: 0.84rem; margin-top: -10px; margin-bottom: 10px; }
+
+        /* Submit button */
+        .btn-submit-review { display: inline-flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #0118d8 0%, #2d3fd9 100%); color: #fff; border: none; border-radius: 10px; padding: 12px 28px; font-size: 1rem; font-weight: 700; cursor: pointer; transition: all 0.25s; box-shadow: 0 4px 14px rgba(1,24,216,0.18); }
+        .btn-submit-review:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(1,24,216,0.28); }
+        .btn-submit-review:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+
+        /* Locked message */
+        .review-locked { background: #f9f9f9; border: 1px solid #eee; border-radius: 10px; padding: 14px 20px; color: #888; font-size: 0.95rem; display: flex; align-items: center; gap: 10px; margin-bottom: 20px; }
+
+        /* Review List Header */
+        .review-list-header { border-bottom: 2px solid #f0f0f0; padding-bottom: 10px; margin-bottom: 18px; }
+        .review-list-title { font-size: 1rem; font-weight: 700; color: #333; }
+
+        /* Review Items */
+        .modern-reviews-list { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 18px; }
+        .review-item { display: flex; gap: 16px; padding: 18px; background: #fafbff; border: 1px solid #edf0ff; border-radius: 12px; transition: box-shadow 0.2s; }
+        .review-item:hover { box-shadow: 0 4px 16px rgba(1,24,216,0.07); }
+        .review-avatar { width: 44px; height: 44px; min-width: 44px; border-radius: 50%; background: linear-gradient(135deg, #0118d8 0%, #4f7cef 100%); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 1.1rem; font-weight: 700; }
+        .review-body { flex: 1; }
+        .review-header { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+        .review-user { font-weight: 700; color: #222; font-size: 0.97rem; }
+        .review-stars-row { color: #f5a623; font-size: 0.92rem; letter-spacing: 1px; }
+        .review-date { font-size: 0.8rem; color: #bbb; margin-left: auto; }
+        .review-comment { font-size: 0.95rem; color: #555; line-height: 1.6; }
+        .review-empty { text-align: center; padding: 32px 0; color: #aaa; font-size: 0.97rem; }
     </style>
 </head>
 
@@ -726,12 +800,12 @@
                         @php
                         $mainImage = $product->primaryImage?->image_path ?? $product->images->first()?->image_path;
                         @endphp
-                        <img src="{{ asset($mainImage) }}" alt="Product Main Image" id="mainProductImg">
+                        <img src="{{ asset($mainImage) }}" alt="{{ $product->name }}" id="mainProductImg" loading="eager" decoding="async" fetchpriority="high">
                     </div>
                     <div class="product-thumbnails">
                     @foreach($product->images as $image)
                         <div class="thumbnail-item {{ $loop->first ? 'active' : '' }}">
-                            <img src="{{ asset($image->image_path) }}" alt="Thumbnail {{ $loop->iteration }}">
+                            <img src="{{ asset($image->image_path) }}" alt="Thumbnail {{ $loop->iteration }}" loading="lazy" decoding="async">
                         </div>
                     @endforeach
                     </div>
@@ -899,25 +973,140 @@
                     </div>
                     @elseif($tab == 'rev')
                     <div class="tab-pane active" id="tab-rev">
-                        <div class="desc-title">Customer Reviews</div>
+
+                        {{-- ===== FLASH MESSAGE ===== --}}
+                        @if(session('review_success'))
+                            <div class="review-alert review-alert-success">
+                                <i class="fas fa-check-circle"></i> {{ session('review_success') }}
+                            </div>
+                        @endif
+                        @if(session('review_error'))
+                            <div class="review-alert review-alert-error">
+                                <i class="fas fa-exclamation-circle"></i> {{ session('review_error') }}
+                            </div>
+                        @endif
+
+                        {{-- ===== RATING OVERVIEW ===== --}}
+                        <div class="review-overview">
+                            <div class="review-avg-block">
+                                <div class="review-avg-score">{{ $avgRating > 0 ? number_format($avgRating, 1) : '-' }}</div>
+                                <div class="review-avg-stars">
+                                    @for($s = 1; $s <= 5; $s++)
+                                        <i class="{{ $s <= round($avgRating) ? 'fas' : 'far' }} fa-star"></i>
+                                    @endfor
+                                </div>
+                                <div class="review-avg-count">{{ $totalApproved }} ulasan terverifikasi</div>
+                            </div>
+                            <div class="review-bars">
+                                @for($i = 5; $i >= 1; $i--)
+                                    <div class="review-bar-row">
+                                        <span class="review-bar-label">{{ $i }} <i class="fas fa-star" style="color:#f5a623;font-size:0.75rem;"></i></span>
+                                        <div class="review-bar-track">
+                                            <div class="review-bar-fill" style="width: {{ $ratingStats[$i]['percent'] ?? 0 }}%;"></div>
+                                        </div>
+                                        <span class="review-bar-count">{{ $ratingStats[$i]['count'] ?? 0 }}</span>
+                                    </div>
+                                @endfor
+                            </div>
+                        </div>
+
+                        {{-- ===== FORM SUBMIT ULASAN ===== --}}
+                        @auth
+                            @if($userReview)
+                                <div class="review-already-done">
+                                    <i class="fas fa-star" style="color:#f5a623;"></i>
+                                    Anda sudah memberikan ulasan
+                                    @for($s=1;$s<=5;$s++)<i class="{{ $s <= $userReview->rating ? 'fas' : 'far' }} fa-star" style="color:#f5a623;font-size:0.9rem;"></i>@endfor
+                                    untuk produk ini.
+                                    @if($userReview->status === 'Pending')
+                                        <span class="review-badge-pending">Menunggu Moderasi</span>
+                                    @elseif($userReview->status === 'Approved')
+                                        <span class="review-badge-approved">Terverifikasi</span>
+                                    @else
+                                        <span class="review-badge-rejected">Tidak Disetujui</span>
+                                    @endif
+                                    <form action="{{ route('reviews.destroy', $userReview->id) }}" method="POST" style="display:inline;margin-left:10px;" onsubmit="return confirm('Hapus ulasan Anda?')">
+                                        @csrf @method('DELETE')
+                                        <button type="submit" class="btn-review-delete"><i class="fas fa-trash-alt"></i> Hapus</button>
+                                    </form>
+                                </div>
+                            @elseif($canReview)
+                                <div class="review-form-wrapper">
+                                    <h4 class="review-form-title"><i class="fas fa-pen-nib"></i> Tulis Ulasan Anda</h4>
+                                    <form action="{{ route('reviews.store') }}" method="POST" id="reviewForm">
+                                        @csrf
+                                        <input type="hidden" name="product_id" value="{{ $product->id }}">
+                                        <div class="star-rating-input" id="starRatingInput">
+                                            <span class="star-rating-label">Rating:</span>
+                                            <div class="star-picker" id="starPicker">
+                                                @for($s = 1; $s <= 5; $s++)
+                                                    <i class="far fa-star star-pick" data-value="{{ $s }}" id="star-pick-{{ $s }}"></i>
+                                                @endfor
+                                            </div>
+                                            <span class="star-rating-hint" id="starHint">Pilih bintang</span>
+                                        </div>
+                                        <input type="hidden" name="rating" id="ratingInput" value="">
+                                        @error('rating')<div class="review-field-error">{{ $message }}</div>@enderror
+                                        <div class="review-textarea-wrap">
+                                            <textarea name="comment" id="reviewComment" class="review-textarea" placeholder="Ceritakan pengalaman Anda dengan produk ini... (opsional)" rows="4" maxlength="1000"></textarea>
+                                            <span class="review-char-count"><span id="charCount">0</span>/1000</span>
+                                        </div>
+                                        @error('comment')<div class="review-field-error">{{ $message }}</div>@enderror
+                                        <button type="submit" class="btn-submit-review" id="submitReviewBtn" disabled>
+                                            <i class="fas fa-paper-plane"></i> Kirim Ulasan
+                                        </button>
+                                    </form>
+                                </div>
+                            @else
+                                <div class="review-locked">
+                                    <i class="fas fa-lock"></i>
+                                    Hanya pembeli yang telah menerima pesanan yang dapat memberikan ulasan.
+                                    <a href="{{ route('shop2') }}" style="color:var(--primary-color);margin-left:4px;">Belanja sekarang</a>
+                                </div>
+                            @endif
+                        @else
+                            <div class="review-locked">
+                                <i class="fas fa-user-circle"></i>
+                                <a href="{{ route('login') }}" style="color:var(--primary-color);">Login</a> untuk memberikan ulasan.
+                            </div>
+                        @endauth
+
+                        {{-- ===== DAFTAR ULASAN ===== --}}
+                        <div class="review-list-header">
+                            <span class="review-list-title">Semua Ulasan ({{ $totalApproved }})</span>
+                        </div>
                         @if($reviews->count())
                             <ul class="modern-reviews-list">
                                 @foreach($reviews as $review)
-                                    <li>
-                                        <div class="review-header">
-                                            <span class="review-user">{{ $review->user?->first_name ?? 'User' }}</span>
-                                            <span class="review-stars"><x-star-rating :rating="$review->rating" /></span>
-                                            <span class="review-date">{{ $review->created_at->format('d M Y') }}</span>
+                                    <li class="review-item">
+                                        <div class="review-avatar">
+                                            <span>{{ strtoupper(substr($review->user?->first_name ?? 'U', 0, 1)) }}</span>
                                         </div>
-                                        <div class="review-comment">
-                                            {{ $review->comment }}
+                                        <div class="review-body">
+                                            <div class="review-header">
+                                                <span class="review-user">{{ $review->user?->first_name ?? 'User' }}</span>
+                                                <span class="review-stars-row">
+                                                    @for($s=1;$s<=5;$s++)
+                                                        <i class="{{ $s <= $review->rating ? 'fas' : 'far' }} fa-star"></i>
+                                                    @endfor
+                                                </span>
+                                                <span class="review-date">{{ $review->created_at->format('d M Y') }}</span>
+                                            </div>
+                                            @if($review->comment)
+                                                <div class="review-comment">{{ $review->comment }}</div>
+                                            @else
+                                                <div class="review-comment" style="color:#aaa;font-style:italic;">Tidak ada komentar.</div>
+                                            @endif
                                         </div>
                                     </li>
                                 @endforeach
                             </ul>
                             <div class="review-pagination">{{ $reviews->withQueryString()->links() }}</div>
                         @else
-                            <p class="text-muted">Belum ada review untuk produk ini. Jadilah yang pertama memberikan review!</p>
+                            <div class="review-empty">
+                                <i class="far fa-comment-dots fa-2x" style="color:#ddd;margin-bottom:8px;display:block;"></i>
+                                Belum ada ulasan terverifikasi. Jadilah yang pertama!
+                            </div>
                         @endif
                     </div>
                     @endif
@@ -943,7 +1132,7 @@
                 <div class="product-card">
                     <div class="product-image set-bg" data-setbg="{{ asset($relatedProduct->primaryImage?->image_path ?? $relatedProduct->images->first()?->image_path) }}">
                         <a href="{{ route('product.details', $relatedProduct->id) }}">
-                            <img src="{{ asset($relatedProduct->primaryImage?->image_path ?? $relatedProduct->images->first()?->image_path) }}" alt="{{ $relatedProduct->name }}">
+                            <img src="{{ asset($relatedProduct->primaryImage?->image_path ?? $relatedProduct->images->first()?->image_path) }}" alt="{{ $relatedProduct->name }}" loading="lazy" decoding="async">
                         </a>
                     </div>
                     <div class="product-content">
@@ -1385,6 +1574,84 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 </script>
+
+    {{-- ===== REVIEW STAR PICKER JS ===== --}}
+    <script>
+    (function() {
+        const starPicker = document.getElementById('starPicker');
+        const ratingInput = document.getElementById('ratingInput');
+        const starHint = document.getElementById('starHint');
+        const submitBtn = document.getElementById('submitReviewBtn');
+        const reviewComment = document.getElementById('reviewComment');
+        const charCount = document.getElementById('charCount');
+
+        const hintTexts = ['', 'Sangat Buruk 😞', 'Buruk 😕', 'Cukup 😐', 'Bagus 😊', 'Sangat Bagus 🤩'];
+        let selectedRating = 0;
+
+        if (starPicker) {
+            const stars = starPicker.querySelectorAll('.star-pick');
+
+            function updateStars(upTo, type) {
+                stars.forEach((s, idx) => {
+                    const val = parseInt(s.dataset.value);
+                    if (type === 'hover') {
+                        s.classList.toggle('hovered', val <= upTo);
+                        s.classList.remove('selected');
+                        s.className = s.className.replace(/\bfas\b/, 'far').replace(/\bfar\b/, 'far');
+                        if (val <= upTo) {
+                            s.classList.remove('far'); s.classList.add('fas');
+                        } else {
+                            s.classList.remove('fas'); s.classList.add('far');
+                        }
+                    } else if (type === 'select') {
+                        s.classList.remove('hovered');
+                        s.classList.toggle('selected', val <= upTo);
+                        if (val <= upTo) {
+                            s.classList.remove('far'); s.classList.add('fas');
+                        } else {
+                            s.classList.remove('fas'); s.classList.add('far');
+                        }
+                    } else { // reset hover → back to selected
+                        s.classList.remove('hovered');
+                        if (val <= selectedRating) {
+                            s.classList.remove('far'); s.classList.add('fas');
+                            s.classList.add('selected');
+                        } else {
+                            s.classList.remove('fas'); s.classList.add('far');
+                            s.classList.remove('selected');
+                        }
+                    }
+                });
+            }
+
+            stars.forEach(star => {
+                star.addEventListener('mouseenter', function() {
+                    updateStars(parseInt(this.dataset.value), 'hover');
+                    if (starHint) starHint.textContent = hintTexts[parseInt(this.dataset.value)] || '';
+                });
+                star.addEventListener('mouseleave', function() {
+                    updateStars(selectedRating, 'reset');
+                    if (starHint) starHint.textContent = selectedRating ? hintTexts[selectedRating] : 'Pilih bintang';
+                });
+                star.addEventListener('click', function() {
+                    selectedRating = parseInt(this.dataset.value);
+                    if (ratingInput) ratingInput.value = selectedRating;
+                    updateStars(selectedRating, 'select');
+                    if (starHint) starHint.textContent = hintTexts[selectedRating];
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+            });
+        }
+
+        // Character counter for textarea
+        if (reviewComment && charCount) {
+            reviewComment.addEventListener('input', function() {
+                charCount.textContent = this.value.length;
+                charCount.style.color = this.value.length >= 950 ? '#e53637' : '#bbb';
+            });
+        }
+    })();
+    </script>
 </body>
 
 </html>

@@ -3,9 +3,11 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Models\Order;
+use App\Models\Reviews;
 use App\Models\Products;
 use App\Models\Categories;
 use App\Models\ActivityLog;
+use App\Helpers\ImageOptimizer;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Models\ProductImages;
@@ -31,6 +33,10 @@ class AdminController extends Controller
         $users = User::latest()->paginate(10);
         $categories = Categories::all();
         $activities = ActivityLog::query()->with('user')->latest()->take(10)->get();
+        // Review management
+        $pendingReviews = Reviews::with(['user', 'product'])->where('status', 'Pending')->latest()->paginate(10, ['*'], 'pending_reviews_page');
+        $approvedReviews = Reviews::with(['user', 'product'])->where('status', 'Approved')->latest()->paginate(10, ['*'], 'approved_reviews_page');
+        $totalPendingReviews = Reviews::where('status', 'Pending')->count();
 
         return view('admin', [
             'totalStock' => $totalStock,
@@ -42,6 +48,9 @@ class AdminController extends Controller
             'users' => $users,
             'categories' => $categories,
             'activities' => $activities,
+            'pendingReviews' => $pendingReviews,
+            'approvedReviews' => $approvedReviews,
+            'totalPendingReviews' => $totalPendingReviews,
         ]);
     }
 
@@ -146,20 +155,20 @@ class AdminController extends Controller
             ]);
         }
 
-        // Simpan gambar utama
+        // Simpan gambar utama (otomatis dikompres & dikonversi ke WebP)
         if ($request->hasFile('product_main_image')) {
-            $mainImage = $request->file('product_main_image')->store('products', 'public');
+            $mainImagePath = ImageOptimizer::processAndStore($request->file('product_main_image'), 'products');
             ProductImages::create([
                 'product_id' => $product->id,
-                'image_path' => $mainImage,
+                'image_path' => $mainImagePath,
                 'is_primary' => true,
             ]);
         }
 
-        // Simpan gallery images
+        // Simpan gallery images (otomatis dikompres & dikonversi ke WebP)
         if ($request->hasFile('product_gallery_images')) {
             foreach ($request->file('product_gallery_images') as $galleryImage) {
-                $galleryPath = $galleryImage->store('products', 'public');
+                $galleryPath = ImageOptimizer::processAndStore($galleryImage, 'products');
                 ProductImages::create([
                     'product_id' => $product->id,
                     'image_path' => $galleryPath,
@@ -320,26 +329,26 @@ class AdminController extends Controller
             }
         }
 
-        // Update gambar utama jika ada
+        // Update gambar utama (otomatis dikompres & dikonversi ke WebP)
         if ($request->hasFile('product_main_image')) {
-            $mainImage = $request->file('product_main_image')->store('products', 'public');
+            $mainImagePath = ImageOptimizer::processAndStore($request->file('product_main_image'), 'products');
             // Hapus gambar utama lama
             $old = ProductImages::where('product_id', $product->id)->where('is_primary', true)->first();
             if ($old) {
-                Storage::disk('public')->delete($old->image_path);
+                ImageOptimizer::delete($old->image_path);
                 $old->delete();
             }
             ProductImages::create([
                 'product_id' => $product->id,
-                'image_path' => $mainImage,
+                'image_path' => $mainImagePath,
                 'is_primary' => true,
             ]);
         }
 
-        // Tambah gallery images jika ada
+        // Tambah gallery images (otomatis dikompres & dikonversi ke WebP)
         if ($request->hasFile('product_gallery_images')) {
             foreach ($request->file('product_gallery_images') as $galleryImage) {
-                $galleryPath = $galleryImage->store('products', 'public');
+                $galleryPath = ImageOptimizer::processAndStore($galleryImage, 'products');
                 ProductImages::create([
                     'product_id' => $product->id,
                     'image_path' => $galleryPath,
@@ -432,5 +441,38 @@ class AdminController extends Controller
         }
 
         return $slug;
+    }
+
+    // ========================
+    // Review Management
+    // ========================
+
+    /**
+     * Approve sebuah review.
+     */
+    public function reviewApprove(Reviews $review)
+    {
+        $review->status = 'Approved';
+        $review->save();
+        return back()->with('success', 'Ulasan berhasil diapprove.');
+    }
+
+    /**
+     * Reject sebuah review.
+     */
+    public function reviewReject(Reviews $review)
+    {
+        $review->status = 'Rejected';
+        $review->save();
+        return back()->with('success', 'Ulasan berhasil ditolak.');
+    }
+
+    /**
+     * Hapus ulasan dari admin.
+     */
+    public function reviewDestroy(Reviews $review)
+    {
+        $review->delete();
+        return back()->with('success', 'Ulasan berhasil dihapus.');
     }
 }

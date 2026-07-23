@@ -47,8 +47,25 @@ class ShopController extends Controller
             });
         }
 
-        // 6. Eksekusi query: urutkan dari yang terbaru, paginasi 6 per halaman
-        $products = $query->latest()->paginate(6);
+        // 6. Terapkan sorting berdasarkan parameter 'sort' dari request
+        // Format: 'field:direction' (contoh: 'price:asc', 'price:desc', 'default:asc')
+        $sort = $request->input('sort', 'default:asc');
+        $sortParts = explode(':', $sort);
+        $sortField = $sortParts[0] ?? 'default';
+        $sortDirection = $sortParts[1] ?? 'asc';
+
+        if ($sortField === 'price') {
+            // Sort berdasarkan harga terendah dari varian produk
+            $query->withMin('variants', 'price')
+                  ->orderBy('variants_min_price', $sortDirection === 'desc' ? 'desc' : 'asc');
+        } else {
+            // Default: urutkan dari produk terbaru
+            $query->latest();
+        }
+
+        // Paginate 6 per halaman, withQueryString() agar filter/sort ikut di link paginasi
+        $products = $query->paginate(6)->withQueryString();
+
 
         // 7. Ambil wishlist user jika sudah login
         $wishlistProductIds = [];
@@ -81,17 +98,54 @@ class ShopController extends Controller
         // Ambil review yang sudah di-approve beserta user, PAGINATE 5 per halaman
         $reviews = $products->reviews()->where('status', 'Approved')->with('user')->latest()->paginate(5);
 
+        // Statistik rating (distribusi per bintang)
+        $ratingStats = [];
+        $totalApproved = $products->reviews()->where('status', 'Approved')->count();
+        for ($i = 5; $i >= 1; $i--) {
+            $count = $products->reviews()->where('status', 'Approved')->where('rating', $i)->count();
+            $ratingStats[$i] = [
+                'count'   => $count,
+                'percent' => $totalApproved > 0 ? round(($count / $totalApproved) * 100) : 0,
+            ];
+        }
+        $avgRating = $totalApproved > 0 ? round($products->reviews()->where('status', 'Approved')->avg('rating'), 1) : 0;
+
+        // Apakah user sudah pernah review produk ini?
+        $userReview = null;
+        $canReview  = false;
+        if (\Illuminate\Support\Facades\Auth::check()) {
+            $userId = \Illuminate\Support\Facades\Auth::id();
+            $userReview = \App\Models\Reviews::where('user_id', $userId)
+                ->where('product_id', $products->id)
+                ->first();
+            // Cek apakah user sudah beli dengan status selesai
+            if (!$userReview) {
+                $canReview = \App\Models\Order::where('user_id', $userId)
+                    ->where('status', 'selesai')
+                    ->whereHas('items.variant', function ($q) use ($products) {
+                        $q->where('product_id', $products->id);
+                    })
+                    ->exists();
+            }
+        }
+
         $wishlistProductIds = [];
         if (Auth::check()) {
             $wishlistProductIds = Wishlist::where('user_id', Auth::id())->pluck('product_id')->toArray();
         }
 
         return view('product-details', [
-            'title'   => 'Product Details',
-            'product' => $products,
-            'relatedProducts' => $relatedProducts,
-            'reviews' => $reviews,
+            'title'              => 'Product Details',
+            'product'            => $products,
+            'relatedProducts'    => $relatedProducts,
+            'reviews'            => $reviews,
+            'ratingStats'        => $ratingStats,
+            'avgRating'          => $avgRating,
+            'totalApproved'      => $totalApproved,
+            'userReview'         => $userReview,
+            'canReview'          => $canReview,
             'wishlistProductIds' => $wishlistProductIds,
         ]);
     }
+
 }

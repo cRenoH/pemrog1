@@ -677,10 +677,21 @@
                     </div>
 
                     <div class="order-summary-container">
-                        <h3>Order Summary</h3>
+                        {{-- Bug 4 Fix: Tambahkan header dengan link ke cart untuk edit item --}}
+                        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; padding-bottom:15px; border-bottom:1px solid #e5e7eb;">
+                            <h3 style="margin:0;">Order Summary</h3>
+                            @if(!request()->has('product_id'))
+                            {{-- Hanya tampilkan link edit jika bukan mode buy-now --}}
+                            <a href="{{ route('cart') }}"
+                               style="font-size:0.85rem; color:#0118d8; font-weight:600; text-decoration:none; display:flex; align-items:center; gap:5px;"
+                               title="Kembali ke keranjang untuk mengedit item">
+                                <i class="fas fa-edit"></i> Edit Keranjang
+                            </a>
+                            @endif
+                        </div>
                         <div class="order-summary-items" id="checkoutOrderItems">
                             @foreach($items as $item)
-                                <div class="order-item">
+                                <div class="order-item" style="position:relative;">
                                     <div class="order-item-image">
                                         <img src="{{ $item['product']->primaryImage ? asset($item['product']->primaryImage->image_path) : asset('img/product-placeholder.png') }}" alt="{{ $item['product']->name }}">
                                     </div>
@@ -693,6 +704,19 @@
                                         <div class="order-item-qty">Qty: {{ $item['quantity'] }}</div>
                                     </div>
                                     <div class="order-item-price">Rp{{ number_format($item['variant']->sale_price ?? $item['variant']->price, 0, ',', '.') }}</div>
+                                    {{-- Bug 4 Fix: Tombol hapus item menggunakan form POST ke route cart.remove --}}
+                                    @if(!request()->has('product_id') && isset($item['cart_id']))
+                                    <form action="{{ route('cart.remove', $item['cart_id']) }}" method="POST"
+                                          style="position:absolute; top:8px; right:0;"
+                                          onsubmit="return confirm('Hapus item ini dari keranjang?');">
+                                        @csrf
+                                        <button type="submit"
+                                                style="background:none; border:none; cursor:pointer; color:#dc3545; padding:4px;"
+                                                title="Hapus item">
+                                            <i class="fas fa-trash-alt" style="font-size:0.9rem;"></i>
+                                        </button>
+                                    </form>
+                                    @endif
                                 </div>
                             @endforeach
                         </div>

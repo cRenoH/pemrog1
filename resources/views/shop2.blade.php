@@ -1161,7 +1161,8 @@
                 <aside class="filter-sidebar">
                     <div class="filter-header">
                         <h4>FILTERS</h4>
-                        <a href="#" class="clear-all">Clear all</a>
+                        {{-- Bug 1 Fix: Arahkan ke URL shop tanpa parameter untuk me-reset semua filter --}}
+                        <a href="{{ route('shop2') }}" class="clear-all">Clear all</a>
                     </div>
 
                     <div class="filter-group">
@@ -1210,10 +1211,11 @@
                             </div>
                         </form>
                         <div class="sort-options">
+                            {{-- Bug 2&3 Fix: Tambah atribut 'selected' berdasarkan parameter ?sort= dari URL --}}
                             <select id="sortProducts">
-                                <option value="default:asc">Sort by: Featured</option>
-                                <option value="price:asc">Price: Low to High</option>
-                                <option value="price:desc">Price: High to Low</option>
+                                <option value="default:asc" {{ request('sort', 'default:asc') === 'default:asc' ? 'selected' : '' }}>Sort by: Featured</option>
+                                <option value="price:asc" {{ request('sort') === 'price:asc' ? 'selected' : '' }}>Price: Low to High</option>
+                                <option value="price:desc" {{ request('sort') === 'price:desc' ? 'selected' : '' }}>Price: High to Low</option>
                             </select>
                         </div>
                     </div>
@@ -1446,6 +1448,19 @@
             // untuk filter dan produk shop2 di sini
             // atau bisa memuatnya dari file eksternal.
             console.log("Shop page JavaScript loaded. Implement your product filtering and display logic here.");
+
+            // Bug 2 & 3 Fix: Event listener untuk dropdown Sort
+            // Saat user memilih opsi sort, reload halaman dengan parameter ?sort= di URL
+            const sortSelect = document.getElementById('sortProducts');
+            if (sortSelect) {
+                sortSelect.addEventListener('change', function () {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('sort', this.value);
+                    // Reset ke halaman 1 saat sorting berubah
+                    url.searchParams.delete('page');
+                    window.location.href = url.toString();
+                });
+            }
 
         });
     </script>

@@ -6,6 +6,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\OrdersController;
 use App\Http\Controllers\RegisterController;
+use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\WishlistController;
 use App\Http\Controllers\UserProfileController;
 
@@ -80,6 +81,10 @@ Route::middleware('auth')->group(function () {
 
     // Customer Service
     Route::view('/customer-service', 'customer-service(Opsional)')->name('customer.service');
+
+    // Reviews
+    Route::post('/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+    Route::delete('/reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
 });
 
 // ========================
@@ -102,4 +107,9 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
     Route::patch('/users/{user}/lock', [AdminController::class, 'lockUser'])->name('admin.users.lock');
     Route::patch('/users/{user}/ban', [AdminController::class, 'banUser'])->name('admin.users.ban');
     Route::patch('/users/{user}/role', [AdminController::class, 'editUserRole'])->name('admin.users.role');
+
+    // Review Management (Admin)
+    Route::post('/reviews/{review}/approve', [AdminController::class, 'reviewApprove'])->name('admin.reviews.approve');
+    Route::post('/reviews/{review}/reject', [AdminController::class, 'reviewReject'])->name('admin.reviews.reject');
+    Route::delete('/reviews/{review}', [AdminController::class, 'reviewDestroy'])->name('admin.reviews.destroy');
 });
