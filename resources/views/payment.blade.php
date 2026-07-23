@@ -745,7 +745,7 @@
                                 <div class="label">Amount</div>
                                 <div class="value">
                                     <span id="paymentAmount">
-                                        Rp{{ number_format(collect($items)->sum(function($item) { return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity']; }) + 18000, 0, ',', '.') }}
+                                        Rp{{ number_format(collect($items)->sum(function($item) { return $item['variant']->effective_price * $item['quantity']; }) + 18000, 0, ',', '.') }}
                                     </span>
                                     <div class="copy-tooltip">
                                         <button class="copy-btn" data-clipboard-target="#paymentAmount" aria-label="Copy payment amount">
@@ -782,7 +782,7 @@
                             <div class="instruction-step">
                                 <span class="step-number">3</span>
                                 <h6>Enter Account Details</h6>
-                                <p>Enter the account number <strong>8690123456</strong> and the amount <strong>Rp{{ number_format(collect($items)->sum(function($item) { return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity']; }) + 18000, 0, ',', '.') }}</strong>.</p>
+                                <p>Enter the account number <strong>8690123456</strong> and the amount <strong>Rp{{ number_format(collect($items)->sum(function($item) { return $item['variant']->effective_price * $item['quantity']; }) + 18000, 0, ',', '.') }}</strong>.</p>
                             </div>
                             <div class="instruction-step">
                                 <span class="step-number">4</span>
@@ -819,7 +819,7 @@
                                 </tr>
                                 <tr>
                                     <th>Subtotal</th>
-                                    <td>Rp{{ number_format(collect($items)->sum(function($item) { return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity']; }), 0, ',', '.') }}</td>
+                                    <td>Rp{{ number_format(collect($items)->sum(function($item) { return $item['variant']->effective_price * $item['quantity']; }), 0, ',', '.') }}</td>
                                 </tr>
                                 <tr>
                                     <th>Shipping</th>
@@ -827,7 +827,7 @@
                                 </tr>
                                 <tr class="grand-total">
                                     <th>Total</th>
-                                    <td>Rp{{ number_format(collect($items)->sum(function($item) { return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity']; }) + 18000, 0, ',', '.') }}</td>
+                                    <td>Rp{{ number_format(collect($items)->sum(function($item) { return $item['variant']->effective_price * $item['quantity']; }) + 18000, 0, ',', '.') }}</td>
                                 </tr>
                             </tbody>
                         </table>

@@ -703,7 +703,7 @@
                                         </div>
                                         <div class="order-item-qty">Qty: {{ $item['quantity'] }}</div>
                                     </div>
-                                    <div class="order-item-price">Rp{{ number_format($item['variant']->sale_price ?? $item['variant']->price, 0, ',', '.') }}</div>
+                                    <div class="order-item-price">Rp{{ number_format($item['variant']->effective_price, 0, ',', '.') }}</div>
                                     {{-- Bug 4 Fix: Tombol hapus item menggunakan form POST ke route cart.remove --}}
                                     @if(!request()->has('product_id') && isset($item['cart_id']))
                                     <form action="{{ route('cart.remove', $item['cart_id']) }}" method="POST"
@@ -726,7 +726,7 @@
                                     <tr>
                                         <th>Subtotal</th>
                                         <td id="orderSubtotal">
-                                            Rp{{ number_format(collect($items)->sum(function($item) { return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity']; }), 0, ',', '.') }}
+                                            Rp{{ number_format(collect($items)->sum(function($item) { return $item['variant']->effective_price * $item['quantity']; }), 0, ',', '.') }}
                                         </td>
                                     </tr>
                                     <tr>
@@ -736,7 +736,7 @@
                                     <tr class="grand-total">
                                         <th>Total</th>
                                         <td id="orderTotal">
-                                            Rp{{ number_format(collect($items)->sum(function($item) { return ($item['variant']->sale_price ?? $item['variant']->price) * $item['quantity']; }) + 18000, 0, ',', '.') }}
+                                            Rp{{ number_format(collect($items)->sum(function($item) { return $item['variant']->effective_price * $item['quantity']; }) + 18000, 0, ',', '.') }}
                                         </td>
                                     </tr>
                                 </tbody>

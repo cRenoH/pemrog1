@@ -52,4 +52,24 @@ class ProductVariants extends Model
      * kolom created_at dan updated_at di tabel ini.
      */
     public $timestamps = false;
+
+    /**
+     * Accessor: harga efektif yang sebenarnya dibayar customer.
+     *
+     * Gunakan $variant->effective_price di semua view & controller
+     * sebagai pengganti ($variant->sale_price ?? $variant->price).
+     *
+     * Logika:
+     *  - sale_price ada DAN lebih kecil dari price → harga diskon (benar)
+     *  - sale_price tidak ada atau >= price          → gunakan price (harga normal)
+     *
+     * Mencegah bug: admin salah memasukkan sale_price > price.
+     */
+    public function getEffectivePriceAttribute(): int
+    {
+        if (!empty($this->sale_price) && (int) $this->sale_price < (int) $this->price) {
+            return (int) $this->sale_price;
+        }
+        return (int) $this->price;
+    }
 }

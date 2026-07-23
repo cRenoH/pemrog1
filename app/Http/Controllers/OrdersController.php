@@ -294,12 +294,13 @@ class OrdersController extends Controller
                 $orderItemsData = [];
                 foreach ($checkout['item_refs'] as $ref) {
                     $variant = $variants[$ref['variant_id']];
-                    $price = $variant->sale_price ?? $variant->price;
+                    // Gunakan effective_price agar konsisten dengan tampilan di checkout/payment
+                    $price = $variant->effective_price;
                     $subtotal += $price * $ref['quantity'];
                     $orderItemsData[] = [
                         'variant_id' => $variant->id,
-                        'quantity' => $ref['quantity'],
-                        'price' => $price,
+                        'quantity'   => $ref['quantity'],
+                        'price'      => $price,
                     ];
                     // Kurangi stok secara atomic
                     $variant->decrement('stock', $ref['quantity']);
