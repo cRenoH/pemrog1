@@ -29,6 +29,16 @@ class Order extends Model
         'resi',
     ];
 
+    // Cast tipe data agar konsisten di semua environment (lokal & server hosting)
+    protected $casts = [
+        'user_id'         => 'integer',
+        'subtotal'        => 'integer',
+        'shipping_cost'   => 'integer',
+        'discount_amount' => 'integer',
+        'total_amount'    => 'integer',
+    ];
+
+
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);

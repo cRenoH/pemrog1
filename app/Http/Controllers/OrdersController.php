@@ -79,8 +79,10 @@ class OrdersController extends Controller
 
     public function remove(Carts $cart)
     {
-        // 1. Cek otorisasi
-        if (auth()->id() !== $cart->user_id) {
+        // 1. Cek otorisasi — gunakan (int) cast agar aman di semua environment DB driver
+        // Di beberapa server hosting, kolom integer dari DB dikembalikan sebagai string,
+        // sehingga perbandingan strict (auth()->id() !== $cart->user_id) bisa gagal.
+        if ((int) auth()->id() !== (int) $cart->user_id) {
             abort(403, 'Unauthorized action.');
         }
 
@@ -485,7 +487,8 @@ class OrdersController extends Controller
         $order = Order::with(['items.variant.product', 'user'])->findOrFail($order);
 
         // Pastikan hanya pemilik order yang bisa melihat invoice
-        if ($order->user_id !== Auth::id()) {
+        // Gunakan (int) cast agar aman — server hosting bisa mengembalikan integer DB sebagai string
+        if ((int) $order->user_id !== (int) Auth::id()) {
             abort(403, 'Anda tidak memiliki akses ke invoice ini.');
         }
 

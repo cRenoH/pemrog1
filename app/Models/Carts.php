@@ -16,6 +16,13 @@ class Carts extends Model
         'quantity',
     ];
 
+    // Cast kolom ke tipe yang benar agar konsisten di semua environment/DB driver
+    protected $casts = [
+        'user_id'            => 'integer',
+        'product_variant_id' => 'integer',
+        'quantity'           => 'integer',
+    ];
+
     // Definisikan relasi ke ProductVariants
     public function productVariant()
     {
