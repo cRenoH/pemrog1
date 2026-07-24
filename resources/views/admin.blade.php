@@ -949,16 +949,33 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                    @foreach($users as $user)
+                                        @foreach($users as $user)
                                         <tr>
                                             <td>{{ $user->first_name }} {{ $user->last_name }}</td>
                                             <td>{{ $user->email }}</td>
-                                            <td>{{ $user->is_admin ? 'Admin' : 'Customer' }}</td>
-                                            <td>{{ $user->created_at->format('M d, Y') }}</td>
                                             <td>
-                                                <button class="btn btn-sm btn-outline-primary btn-view-user" data-toggle="modal" data-target="#userDetailModal" data-user='@json($user)'>
+                                                @if($user->is_admin)
+                                                    <span style="background:#4361ee;color:#fff;border-radius:6px;padding:2px 10px;font-size:0.78rem;font-weight:700;">Admin</span>
+                                                @else
+                                                    <span style="background:#e9ecef;color:#495057;border-radius:6px;padding:2px 10px;font-size:0.78rem;font-weight:700;">Customer</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $user->created_at->format('M d, Y') }}</td>
+                                            <td style="white-space:nowrap;">
+                                                {{-- Tombol Lihat Detail --}}
+                                                <button class="btn btn-sm btn-outline-primary btn-view-user" data-toggle="modal" data-target="#userDetailModal" data-user='@json($user)' title="Lihat Detail">
                                                     <i class="fas fa-eye"></i>
                                                 </button>
+                                                {{-- Tombol Hapus Akun --}}
+                                                @if(!$user->is_admin)
+                                                <form action="{{ route('admin.users.delete', $user->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus akun {{ addslashes($user->first_name) }} {{ addslashes($user->last_name) }}? Tindakan ini tidak dapat dibatalkan!')">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus Akun">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                                @endif
                                             </td>
                                         </tr>
                             @endforeach
@@ -999,6 +1016,7 @@
                         <tr>
                             <th>Produk</th>
                             <th>User</th>
+                            <th>Email</th>
                             <th>Rating</th>
                             <th>Komentar</th>
                             <th>Tanggal</th>
@@ -1011,34 +1029,46 @@
                             <td><strong>{{ $review->product->name ?? '-' }}</strong></td>
                             <td>{{ $review->user->first_name ?? '-' }} {{ $review->user->last_name ?? '' }}</td>
                             <td>
+                                <small style="color:#555;">{{ $review->user->email ?? '-' }}</small>
+                            </td>
+                            <td>
                                 @for($s=1;$s<=5;$s++)
                                     <i class="{{ $s <= $review->rating ? 'fas' : 'far' }} fa-star" style="color:#f5a623;font-size:0.85rem;"></i>
                                 @endfor
                                 <span class="ml-1" style="font-size:0.85rem;color:#666;">{{ $review->rating }}/5</span>
                             </td>
-                            <td style="max-width:250px;">
-                                <span style="font-size:0.9rem;color:#555;">{{ $review->comment ? Str::limit($review->comment, 80) : '<em style="color:#aaa;">Tidak ada komentar</em>' }}</span>
+                            <td style="max-width:200px;">
+                                <span style="font-size:0.9rem;color:#555;">{{ $review->comment ? Str::limit($review->comment, 60) : '<em style="color:#aaa;">Tidak ada komentar</em>' }}</span>
                             </td>
                             <td><small style="color:#888;">{{ $review->created_at->format('d M Y') }}</small></td>
                             <td>
+                                {{-- Approve --}}
                                 <form action="{{ route('admin.reviews.approve', $review->id) }}" method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-success" title="Approve">
                                         <i class="fas fa-check"></i> Approve
                                     </button>
                                 </form>
+                                {{-- Reject --}}
                                 <form action="{{ route('admin.reviews.reject', $review->id) }}" method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-warning" title="Reject">
                                         <i class="fas fa-times"></i> Reject
                                     </button>
                                 </form>
+                                {{-- Hapus --}}
                                 <form action="{{ route('admin.reviews.destroy', $review->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus ulasan ini?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
+                                {{-- Chat via Email --}}
+                                @if($review->user && $review->user->email)
+                                <a href="mailto:{{ $review->user->email }}?subject=Mengenai Ulasan Anda di DariMata Studio&body=Halo {{ $review->user->first_name }}," class="btn btn-sm btn-outline-primary" title="Chat via Email">
+                                    <i class="fas fa-envelope"></i> Chat
+                                </a>
+                                @endif
                             </td>
                         </tr>
                         @endforeach
@@ -1065,6 +1095,7 @@
                         <tr>
                             <th>Produk</th>
                             <th>User</th>
+                            <th>Email</th>
                             <th>Rating</th>
                             <th>Komentar</th>
                             <th>Tanggal</th>
@@ -1077,27 +1108,38 @@
                             <td><strong>{{ $review->product->name ?? '-' }}</strong></td>
                             <td>{{ $review->user->first_name ?? '-' }} {{ $review->user->last_name ?? '' }}</td>
                             <td>
+                                <small style="color:#555;">{{ $review->user->email ?? '-' }}</small>
+                            </td>
+                            <td>
                                 @for($s=1;$s<=5;$s++)
                                     <i class="{{ $s <= $review->rating ? 'fas' : 'far' }} fa-star" style="color:#f5a623;font-size:0.85rem;"></i>
                                 @endfor
                             </td>
-                            <td style="max-width:250px;">
-                                <span style="font-size:0.9rem;color:#555;">{{ $review->comment ? Str::limit($review->comment, 80) : '<em style="color:#aaa;">Tidak ada komentar</em>' }}</span>
+                            <td style="max-width:200px;">
+                                <span style="font-size:0.9rem;color:#555;">{{ $review->comment ? Str::limit($review->comment, 60) : '<em style="color:#aaa;">Tidak ada komentar</em>' }}</span>
                             </td>
                             <td><small style="color:#888;">{{ $review->created_at->format('d M Y') }}</small></td>
                             <td>
+                                {{-- Reject --}}
                                 <form action="{{ route('admin.reviews.reject', $review->id) }}" method="POST" style="display:inline;">
                                     @csrf
                                     <button type="submit" class="btn btn-sm btn-outline-warning" title="Reject">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </form>
+                                {{-- Hapus --}}
                                 <form action="{{ route('admin.reviews.destroy', $review->id) }}" method="POST" style="display:inline;" onsubmit="return confirm('Hapus ulasan ini?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
                                         <i class="fas fa-trash"></i>
                                     </button>
                                 </form>
+                                {{-- Chat via Email --}}
+                                @if($review->user && $review->user->email)
+                                <a href="mailto:{{ $review->user->email }}?subject=Mengenai Ulasan Anda di DariMata Studio&body=Halo {{ $review->user->first_name }}," class="btn btn-sm btn-outline-primary" title="Chat via Email">
+                                    <i class="fas fa-envelope"></i> Chat
+                                </a>
+                                @endif
                             </td>
                         </tr>
                         @endforeach
@@ -1715,13 +1757,24 @@
         $('#orderEditModal').modal('show');
     });
 
-    // User detail modal
+    // User detail modal — Bug Fix: tampilkan role berdasarkan data user yang diklik
     $(document).on('click', '.btn-view-user', function() {
         const user = $(this).data('user');
+        const isAdmin = user.is_admin == true || user.is_admin == 1;
+        const roleBadge = isAdmin
+            ? '<span style="background:#4361ee;color:#fff;border-radius:6px;padding:2px 10px;font-size:0.82rem;font-weight:700;">Admin</span>'
+            : '<span style="background:#e9ecef;color:#495057;border-radius:6px;padding:2px 10px;font-size:0.82rem;font-weight:700;">Customer</span>';
+
+        const statusLocked = user.is_locked ? '<span style="background:#ef233c;color:#fff;border-radius:6px;padding:2px 8px;font-size:0.78rem;">Locked</span>' : '';
+        const statusBanned = user.is_banned ? '<span style="background:#ef233c;color:#fff;border-radius:6px;padding:2px 8px;font-size:0.78rem;">Banned</span>' : '';
+
         $('#userDetailContent').html(`
-            <strong>Name:</strong> ${user.first_name} ${user.last_name}<br>
-            <strong>Email:</strong> ${user.email}<br>
-            <strong>Role:</strong> ${user.is_admin ? 'Admin' : 'Customer'}<br>
+            <table class="table table-bordered" style="font-size:0.95rem;">
+                <tr><th style="width:35%">Nama</th><td>${user.first_name || ''} ${user.last_name || ''}</td></tr>
+                <tr><th>Email</th><td>${user.email || '-'}</td></tr>
+                <tr><th>Role</th><td>${roleBadge} ${statusLocked} ${statusBanned}</td></tr>
+                <tr><th>Bergabung</th><td>${user.created_at ? new Date(user.created_at).toLocaleDateString('id-ID', {year:'numeric',month:'long',day:'numeric'}) : '-'}</td></tr>
+            </table>
         `);
         $('#userDetailModal').modal('show');
     });

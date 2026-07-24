@@ -86,17 +86,76 @@ class OrdersController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // 2. Logika: Cek kuantitas item
-        if ($cart->quantity > 1) {
-            $cart->quantity -= 1;
-            $cart->save();
-            $message = 'Kuantitas item berhasil diperbarui.';
-        } else {
-            $cart->delete();
-            $message = 'Item berhasil dihapus dari keranjang.';
+        $cart->delete();
+        return back()->with('success', 'Item berhasil dihapus dari keranjang.');
+    }
+
+    /**
+     * Update quantity item di keranjang via AJAX (tombol + dan -).
+     * Response JSON: { quantity, item_subtotal, subtotal } atau { removed: true, subtotal }.
+     * Bug Fix: Jika quantity menjadi 0, item dihapus dan response dikirim dengan aman (tidak redirect ke 404).
+     */
+    public function update(Request $request, Carts $cart)
+    {
+        if ((int) auth()->id() !== (int) $cart->user_id) {
+            if ($request->wantsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Unauthorized.'], 403);
+            }
+            abort(403, 'Unauthorized action.');
         }
 
-        return back()->with('success', $message);
+        $action = $request->input('action', 'increase');
+        $cart->load('productVariant');
+
+        if ($action === 'increase') {
+            // Validasi stok sebelum menambah
+            $variant = $cart->productVariant;
+            if ($variant && $cart->quantity >= $variant->stock) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['error' => 'Stok tidak mencukupi. Tersisa ' . $variant->stock . ' item.']);
+                }
+                return back()->with('error', 'Stok tidak mencukupi.');
+            }
+            $cart->quantity += 1;
+            $cart->save();
+        } elseif ($action === 'decrease') {
+            if ($cart->quantity > 1) {
+                $cart->quantity -= 1;
+                $cart->save();
+            } else {
+                // Qty menjadi 0 → hapus item dengan aman
+                $cart->delete();
+
+                // Hitung ulang subtotal keranjang setelah penghapusan
+                $subtotal = Carts::where('user_id', auth()->id())
+                    ->with('productVariant')
+                    ->get()
+                    ->sum(fn($c) => $c->productVariant ? $c->productVariant->price * $c->quantity : 0);
+
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['removed' => true, 'subtotal' => $subtotal]);
+                }
+                return redirect()->route('cart')->with('success', 'Item berhasil dihapus dari keranjang.');
+            }
+        }
+
+        // Hitung subtotal per item dan total keranjang
+        $cart->load('productVariant');
+        $itemSubtotal = $cart->productVariant ? $cart->productVariant->price * $cart->quantity : 0;
+        $subtotal = Carts::where('user_id', auth()->id())
+            ->with('productVariant')
+            ->get()
+            ->sum(fn($c) => $c->productVariant ? $c->productVariant->price * $c->quantity : 0);
+
+        if ($request->wantsJson() || $request->ajax()) {
+            return response()->json([
+                'quantity'       => $cart->quantity,
+                'item_subtotal'  => $itemSubtotal,
+                'subtotal'       => $subtotal,
+            ]);
+        }
+
+        return back()->with('success', 'Kuantitas berhasil diperbarui.');
     }
 
     // ========================

@@ -51,6 +51,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/cart', [OrdersController::class, 'show'])->name('cart');
     Route::post('/cart/add', [OrdersController::class, 'add'])->name('cart.add');
     Route::post('/cart/remove/{cart}', [OrdersController::class, 'remove'])->name('cart.remove');
+    Route::post('/cart/update/{cart}', [OrdersController::class, 'update'])->name('cart.update');
 
     // Wishlist
     Route::get('/wishlist', [WishlistController::class, 'wishlist'])->name('wishlist');
@@ -107,6 +108,7 @@ Route::middleware(['auth', 'is_admin'])->prefix('admin')->group(function () {
     Route::patch('/users/{user}/lock', [AdminController::class, 'lockUser'])->name('admin.users.lock');
     Route::patch('/users/{user}/ban', [AdminController::class, 'banUser'])->name('admin.users.ban');
     Route::patch('/users/{user}/role', [AdminController::class, 'editUserRole'])->name('admin.users.role');
+    Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('admin.users.delete');
 
     // Review Management (Admin)
     Route::post('/reviews/{review}/approve', [AdminController::class, 'reviewApprove'])->name('admin.reviews.approve');

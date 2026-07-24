@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Keranjang Belanja - DariMata Studio</title>
-
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <!-- Google Font: Nunito Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -179,6 +179,46 @@
         .fa-trash-alt:hover {
             color: #a02a37 !important;
         }
+
+        /* Quantity Controls */
+        .quantity-controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+        .qty-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            border: 1.5px solid #dee2e6;
+            background: #fff;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            color: #333;
+            line-height: 1;
+            padding: 0;
+        }
+        .qty-btn:hover {
+            background: #0118d8;
+            color: #fff;
+            border-color: #0118d8;
+        }
+        .qty-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .qty-value {
+            min-width: 28px;
+            text-align: center;
+            font-weight: 700;
+            font-size: 1rem;
+        }
     </style>
 </head>
 
@@ -265,12 +305,19 @@
                             Rp{{ number_format($subtotalItem) }}
                         </div>
                         <div class="remove-item text-center">
-                            <form action="{{ route('cart.remove', $item->id) }}" method="POST">
-                                @csrf
-                                <button type="submit" style="background:none; border:none; padding:0; cursor:pointer;" title="Remove item">
-                                    <i class="fas fa-trash-alt" style="color: #dc3545;"></i>
-                                </button>
-                            </form>
+                            <div class="quantity-controls" data-item-id="{{ $item->id }}">
+                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="qty-form">
+                                    @csrf
+                                    <input type="hidden" name="action" value="decrease">
+                                    <button type="submit" class="qty-btn qty-minus" title="Kurangi">&#8722;</button>
+                                </form>
+                                <span class="qty-value" id="qty-{{ $item->id }}">{{ $item->quantity }}</span>
+                                <form action="{{ route('cart.update', $item->id) }}" method="POST" class="qty-form">
+                                    @csrf
+                                    <input type="hidden" name="action" value="increase">
+                                    <button type="submit" class="qty-btn qty-plus" title="Tambah">&#43;</button>
+                                </form>
+                            </div>
                         </div>
                     </div>
                 @endforeach
@@ -368,7 +415,7 @@
     </script>
     <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Toggle dropdown profile
+    // Profile dropdown toggle untuk halaman cart
     const profileTrigger = document.getElementById('profileTrigger');
     const profileDropdown = document.getElementById('profileDropdown');
     
@@ -376,13 +423,80 @@ document.addEventListener('DOMContentLoaded', function() {
         profileTrigger.addEventListener('click', function(e) {
             e.stopPropagation();
             profileDropdown.classList.toggle('show');
+            profileTrigger.classList.toggle('active');
         });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function() {
-            profileDropdown.classList.remove('show');
+        document.addEventListener('click', function(e) {
+            if (!profileTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+                profileDropdown.classList.remove('show');
+                profileTrigger.classList.remove('active');
+            }
         });
     }
+
+    // AJAX Quantity Update untuk tombol +/-
+    document.querySelectorAll('.qty-form').forEach(function(form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const action = form.querySelector('input[name="action"]').value;
+            const controls = form.closest('.quantity-controls');
+            const itemId = controls.dataset.itemId;
+            const qtySpan = document.getElementById('qty-' + itemId);
+            const csrfToken = document.querySelector('meta[name="csrf-token"]');
+
+            if (!csrfToken) {
+                // Jika tidak ada CSRF meta, lakukan submit biasa
+                form.submit();
+                return;
+            }
+
+            fetch('{{ url("cart/update") }}/' + itemId, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': csrfToken.getAttribute('content'),
+                    'Accept': 'application/json',
+                },
+                body: JSON.stringify({ action: action })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (data.removed) {
+                    // Item dihapus karena qty jadi 0 — hapus baris dari DOM
+                    const row = controls.closest('.cart-item');
+                    if (row) row.remove();
+                    // Update subtotal
+                    if (data.subtotal !== undefined) {
+                        const subtotalEl = document.querySelector('.summary-row .text-end');
+                        if (subtotalEl) subtotalEl.textContent = 'Rp' + Number(data.subtotal).toLocaleString('id-ID');
+                    }
+                } else if (data.quantity !== undefined) {
+                    // Update angka quantity
+                    qtySpan.textContent = data.quantity;
+                    // Update subtotal item jika ada
+                    if (data.item_subtotal !== undefined) {
+                        const row = controls.closest('.cart-item');
+                        if (row) {
+                            const subtotalCell = row.querySelector('.subtotal');
+                            if (subtotalCell) subtotalCell.textContent = 'Rp' + Number(data.item_subtotal).toLocaleString('id-ID');
+                        }
+                    }
+                    // Update total
+                    if (data.subtotal !== undefined) {
+                        const subtotalEl = document.querySelector('.summary-row .text-end');
+                        if (subtotalEl) subtotalEl.textContent = 'Rp' + Number(data.subtotal).toLocaleString('id-ID');
+                    }
+                } else if (data.error) {
+                    alert(data.error);
+                }
+            })
+            .catch(err => {
+                console.error('Cart update error:', err);
+                // Fallback: submit form biasa jika AJAX gagal
+                form.submit();
+            });
+        });
+    });
 });
 </script>
 </body>

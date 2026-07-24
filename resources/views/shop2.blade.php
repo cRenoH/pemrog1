@@ -1290,7 +1290,7 @@
                 </div>
 
                         <div class="product-actions-row">
-                            {{-- Form ini sekarang membungkus tombol ikon keranjang --}}
+                            {{-- Tombol Add to Cart --}}
                             <form action="{{ route('cart.add') }}" method="POST" style="display:inline;">
                                 @csrf
                                 @if($variant)
@@ -1299,20 +1299,14 @@
                                         <i class="fas fa-shopping-cart"></i>
                                     </button>
                                 @else
-                                    <input type="hidden" name="variant_id" value="">
                                     <button type="button" class="btn-cart-icon btn-secondary" title="No Variant" disabled>
                                         <i class="fas fa-shopping-cart"></i>
                                     </button>
                                 @endif
                             </form>
 
-                            {{-- Tombol checkout diubah menjadi form agar bisa kirim parameter buy now --}}
-                            <form action="/checkout" method="GET" style="display:inline;">
-                                <input type="hidden" name="product_id" value="{{ $product->id }}">
-                                <input type="hidden" name="variant_id" value="{{ $variant?->id }}">
-                                <input type="hidden" name="qty" value="1">
-                                <button type="submit" class="btn-checkout">Checkout</button>
-                            </form>
+                            {{-- Tombol Checkout diarahkan ke halaman detail produk agar user bisa memilih varian, ukuran, warna, dan qty --}}
+                            <a href="{{ route('product.details', $product->id) }}" class="btn-checkout">Beli</a>
                             </div>
                         </div>
                     </div>
@@ -1379,17 +1373,20 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const profileIconContainer = document.getElementById('profileIconContainer');
-            const profileDropdownMenu = document.getElementById('profileDropdownMenu');
+            // Fix: profile dropdown — ID yang benar adalah 'profileDropdown' (sesuai partials/header.blade.php)
+            const profileTriggerBtn = document.getElementById('profileTrigger');
+            const profileDropdownEl = document.getElementById('profileDropdown');
 
-            if (profileIconContainer && profileDropdownMenu) {
-                profileIconContainer.addEventListener('click', function (event) {
+            if (profileTriggerBtn && profileDropdownEl) {
+                profileTriggerBtn.addEventListener('click', function (event) {
                     event.stopPropagation();
-                    profileDropdownMenu.classList.toggle('active');
+                    profileDropdownEl.classList.toggle('show');
+                    profileTriggerBtn.classList.toggle('active');
                 });
                 document.addEventListener('click', function (event) {
-                    if (!profileIconContainer.contains(event.target) && !profileDropdownMenu.contains(event.target)) {
-                        profileDropdownMenu.classList.remove('active');
+                    if (!profileTriggerBtn.contains(event.target) && !profileDropdownEl.contains(event.target)) {
+                        profileDropdownEl.classList.remove('show');
+                        profileTriggerBtn.classList.remove('active');
                     }
                 });
             }
@@ -1587,32 +1584,11 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 </script>
 
- <script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Toggle dropdown profile
-    const profileTrigger = document.getElementById('profileTrigger');
-    const profileDropdown = document.getElementById('profileDropdown');
-    
-    if (profileTrigger && profileDropdown) {
-        profileTrigger.addEventListener('click', function(e) {
-            e.stopPropagation();
-            profileDropdown.classList.toggle('show');
-        });
-
-        // Close dropdown when clicking outside
-        document.addEventListener('click', function() {
-            profileDropdown.classList.remove('show');
-        });
-    }
-});
-</script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const priceSlider = document.getElementById('price-slider');
     
     if (!priceSlider) {
-        // Jika elemen tidak ditemukan, hentikan eksekusi script
         console.error('Elemen #price-slider tidak ditemukan. Slider tidak dapat dibuat.');
         return;
     }

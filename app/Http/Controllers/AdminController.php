@@ -417,6 +417,38 @@ class AdminController extends Controller
     }
 
     /**
+     * Hapus akun user biasa (non-admin).
+     * Proteksi: tidak bisa menghapus akun admin dan tidak bisa menghapus diri sendiri.
+     */
+    public function deleteUser(User $user)
+    {
+        // Jangan hapus akun yang sedang login
+        if ($user->id === auth()->id()) {
+            return redirect()->to(route('admin.dashboard', [], false) . '#users')
+                ->with('error', 'Anda tidak dapat menghapus akun Anda sendiri.');
+        }
+
+        // Jangan hapus akun admin
+        if ($user->is_admin) {
+            return redirect()->to(route('admin.dashboard', [], false) . '#users')
+                ->with('error', 'Akun admin tidak dapat dihapus melalui fitur ini.');
+        }
+
+        $userName = $user->first_name . ' ' . $user->last_name;
+        $user->delete();
+
+        ActivityLog::create([
+            'type'        => 'user',
+            'action'      => 'deleted',
+            'user_id'     => auth()->id(),
+            'description' => 'Deleted user account: ' . $userName,
+        ]);
+
+        return redirect()->to(route('admin.dashboard', [], false) . '#users')
+            ->with('success', 'Akun pengguna ' . $userName . ' berhasil dihapus.');
+    }
+
+    /**
      * Helper: Generate slug unik untuk produk.
      * @param string $name Nama produk
      * @param int|null $excludeId ID produk yang dikecualikan (untuk update)
