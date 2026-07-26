@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="id">
 
 <head>
@@ -8,7 +8,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>DariMata Studio - Shop</title>
-    <meta name="csrf-token" content="{{ csrf_token() }}">
+     <link rel="icon" href="{{ asset('img/logo2.png') }}" type="image/png">
+   <meta name="csrf-token" content="{{ csrf_token() }}">
 
     <!-- Google Font: Nunito Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">

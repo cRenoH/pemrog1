@@ -9,6 +9,7 @@
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
     <title>Checkout - DariMata Studio</title>
 
+    <link rel="icon" href="{{ asset('img/logo2.png') }}" type="image/png">
     <!-- Google Font: Nunito Sans -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
