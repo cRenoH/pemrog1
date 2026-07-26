@@ -1152,7 +1152,6 @@
     <div class="mobile-nav-overlay" id="mobileNavOverlay"></div>
     <section class="shop-main-content-placeholder">
         <div class="container">
-            <h2>.</h2>
             <h1>Our Products</h1>
             <p>This is where your shop's main content, product grid, and filters will go.</p>
 
