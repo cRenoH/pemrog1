@@ -308,12 +308,6 @@
                             <h1 class="register__title">Create Account</h1>
                             <p class="register__subtitle">Sign up to start your journey with DariMata Studio</p>
                         </div>
-                        <!-- Tampilkan pesan sukses jika ada -->
-                        @if(session('success'))
-                        <div class="alert alert-success" style="background-color: #d1e7dd; color: #0f5132; padding: 1rem; border-radius: 8px; margin-bottom: 20px; text-align: center;">
-                         {{ session('success') }}
-                        </div>
-                        @endif
                         <!-- Tampilkan pesan error jika ada -->
                         @if ($errors->any())
                             <div class="alert alert-danger" style="margin-bottom:16px;">

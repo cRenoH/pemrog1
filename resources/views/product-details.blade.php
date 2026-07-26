@@ -1347,20 +1347,6 @@
                 });
             }
 
-            // Function untuk load product data
-            
-            // Ambil product ID dari URL (misalnya, product-details.html?product=workaholic-tee)
-            const urlParams = new URLSearchParams(window.location.search);
-            const productIdFromUrl = urlParams.get('product');
-
-            if (productIdFromUrl) {
-                loadProductDetails(productIdFromUrl);
-            } else {
-                // Jika tidak ada ID produk, muat produk default atau tampilkan error
-                console.warn('No product ID found in URL. Loading default or showing error.');
-                loadProductDetails("workaholic-tee"); // Muat produk default sebagai contoh
-            }
-
 
             // Set background untuk related products
             document.querySelectorAll('.related-products-grid .set-bg').forEach(function (element) {
