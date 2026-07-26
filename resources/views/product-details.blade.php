@@ -786,9 +786,6 @@
     </section>
 
     <!-- Product Details Section -->
-    @php
-        $tab = request('tab', 'desc');
-    @endphp
     @if ($product)
         
    
@@ -921,12 +918,12 @@
 
             <div class="product-tabs">
                 <div class="tab-menu">
-                    <a href="?tab=desc" class="tab-btn{{ $tab == 'desc' ? ' active' : '' }}" id="tab-btn-desc">Description</a>
-                    <a href="?tab=spec" class="tab-btn{{ $tab == 'spec' ? ' active' : '' }}" id="tab-btn-spec">Specification</a>
-                    <a href="?tab=rev" class="tab-btn{{ $tab == 'rev' ? ' active' : '' }}" id="tab-btn-rev">Reviews ({{ $reviews->count() }})</a>
+                    <button class="tab-btn active" id="tab-btn-desc" data-tab="tab-desc">Description</button>
+                    <button class="tab-btn" id="tab-btn-spec" data-tab="tab-spec">Specification</button>
+                    <button class="tab-btn" id="tab-btn-rev" data-tab="tab-rev">Reviews ({{ $reviews->count() }})</button>
                 </div>
                 <div class="tab-content-area">
-                    @if($tab == 'desc')
+                    {{-- === TAB: DESCRIPTION === --}}
                     <div class="tab-pane active" id="tab-desc">
                         <div class="desc-title">Product Description</div>
                         <div class="desc-main">{{$product['description']}}</div>
@@ -936,11 +933,12 @@
                             <li>Potongan: Boxy Fit (oversized, bahu turun)</li>
                             <li>Sablon: Plastisol Ink, tahan lama dan tidak mudah pecah</li>
                             <li>Jahitan: Rapi dan kuat</li>
-                            <li>Cocok untuk: Pria & Wanita (Unisex)</li>
+                            <li>Cocok untuk: Pria &amp; Wanita (Unisex)</li>
                         </ul>
                     </div>
-                    @elseif($tab == 'spec')
-                    <div class="tab-pane active" id="tab-spec">
+
+                    {{-- === TAB: SPECIFICATION === --}}
+                    <div class="tab-pane" id="tab-spec">
                         <div class="desc-title">Product Specification</div>
                         <div class="spec-table-wrap">
                             <table class="spec-table">
@@ -971,8 +969,9 @@
                             </table>
                         </div>
                     </div>
-                    @elseif($tab == 'rev')
-                    <div class="tab-pane active" id="tab-rev">
+
+                    {{-- === TAB: REVIEWS === --}}
+                    <div class="tab-pane" id="tab-rev">
 
                         {{-- ===== FLASH MESSAGE ===== --}}
                         @if(session('review_success'))
@@ -1002,7 +1001,7 @@
                                     <div class="review-bar-row">
                                         <span class="review-bar-label">{{ $i }} <i class="fas fa-star" style="color:#f5a623;font-size:0.75rem;"></i></span>
                                         <div class="review-bar-track">
-                                            <div class="review-bar-fill" style="width: {{ $ratingStats[$i]['percent'] ?? 0 }}%;"></div>
+                                            <div class="review-bar-fill" style="width: {{ $ratingStats[$i]['percent'] ?? 0 }};"></div>
                                         </div>
                                         <span class="review-bar-count">{{ $ratingStats[$i]['count'] ?? 0 }}</span>
                                     </div>
@@ -1109,7 +1108,6 @@
                             </div>
                         @endif
                     </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -1152,54 +1150,7 @@
     </div>
 </section>
 
-    <footer class="site-footer">
-        <div class="container">
-            <div class="footer-grid">
-                <div class="footer-widget">
-                    <h5>About Us</h5>
-                    <p>DariMata Studio is dedicated to bringing you unique and stylish fashion pieces that inspire
-                        confidence.</p>
-                    <div class="social-icons">
-                        <a href="#" aria-label="Facebook"><i class="fab fa-facebook-f"></i></a>
-                        <a href="#" aria-label="Instagram"><i class="fab fa-instagram"></i></a>
-                        <a href="#" aria-label="Twitter"><i class="fab fa-twitter"></i></a>
-                        <a href="#" aria-label="Pinterest"><i class="fab fa-pinterest-p"></i></a>
-                    </div>
-                </div>
-                <div class="footer-widget">
-                    <h5>Shop</h5>
-                    <ul>
-                        <li><a href="shop2?category=new-arrivals">New Arrivals</a></li>
-                        <li><a href="shop2?category=clothing">Clothing</a></li>
-                        <li><a href="shop2?category=accessories">Accessories</a></li>
-                        <li><a href="shop2?category=sale">Sale</a></li>
-                    </ul>
-                </div>
-                <div class="footer-widget">
-                    <h5>Customer Service</h5>
-                    <ul>
-                        <li><a href="contact">Contact Us</a></li>
-                        <li><a href="#">Shipping & Returns</a></li>
-                        <li><a href="#">FAQs</a></li>
-                        <li><a href="#">Size Guide</a></li>
-                    </ul>
-                </div>
-                <div class="footer-widget">
-                    <h5>Newsletter</h5>
-                    <p>Subscribe to our newsletter for the latest updates and promotions.</p>
-                    <form action="#" method="post" style="display: flex; margin-top: 10px;">
-                        <input type="email" name="email" placeholder="Your Email" required
-                            style="flex-grow: 1; padding: 8px; border: 1px solid rgba(255,255,255,0.2); border-radius: 3px 0 0 3px; background: rgba(255,255,255,0.1); color: #fff;">
-                        <button type="submit" class="btn"
-                            style="border-radius: 0 3px 3px 0; padding: 8px 12px; background: #fff; color: var(--primary-color); text-transform: capitalize; font-weight: 600;">Subscribe</button>
-                    </form>
-                </div>
-            </div>
-            <div class="footer-bottom">
-                <p>&copy; <span id="currentYearFooter"></span> DariMata Studio. All Rights Reserved.</p>
-            </div>
-        </div>
-    </footer>
+    @include('partials.footer')
 
     <script src="https://cdn.jsdelivr.net/npm/basiclightbox@5.0.4/dist/basicLightbox.min.js"></script>
 
@@ -1540,6 +1491,36 @@
             }
 
         });
+    </script>
+
+    {{-- ===== PRODUCT TABS JS (Client-Side) ===== --}}
+    <script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const tabBtns = document.querySelectorAll('.product-tabs .tab-btn');
+        const tabPanes = document.querySelectorAll('.product-tabs .tab-pane');
+
+        tabBtns.forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                const targetId = this.getAttribute('data-tab');
+
+                // Remove active from all buttons
+                tabBtns.forEach(function (b) { b.classList.remove('active'); });
+                // Remove active from all panes
+                tabPanes.forEach(function (p) { p.classList.remove('active'); });
+
+                // Activate clicked button and target pane
+                this.classList.add('active');
+                const targetPane = document.getElementById(targetId);
+                if (targetPane) { targetPane.classList.add('active'); }
+            });
+        });
+
+        // Auto-open Reviews tab if there's a flash message for reviews
+        @if(session('review_success') || session('review_error'))
+            const revBtn = document.getElementById('tab-btn-rev');
+            if (revBtn) { revBtn.click(); }
+        @endif
+    });
     </script>
      <script>
 document.addEventListener('DOMContentLoaded', function() {

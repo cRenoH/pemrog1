@@ -25,7 +25,7 @@
         <div class="container header-container">
             <div class="header-logo">
                 <a href="/">
-                    <img src="img/logo2.png" alt="DariMata Studio Logo">
+                    <img src="{{ asset('img/logo2.png') }}" alt="DariMata Studio Logo">
                 </a>
             </div>
 
