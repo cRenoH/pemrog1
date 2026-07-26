@@ -1306,7 +1306,7 @@
                             </form>
 
                             {{-- Tombol Checkout diarahkan ke halaman detail produk agar user bisa memilih varian, ukuran, warna, dan qty --}}
-                            <a href="{{ route('product.details', $product->id) }}" class="btn-checkout">Beli</a>
+                            <a href="{{ route('product.details', $product->id) }}" class="btn-checkout">Buy</a>
                             </div>
                         </div>
                     </div>

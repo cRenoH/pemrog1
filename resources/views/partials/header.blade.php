@@ -86,8 +86,7 @@
                 </div>
                 <ul class="dropdown-menu-list">
                     <li>
-                        <li>
-                            <a href="{{ route('user-profile') }}" class="dropdown-menu-item">
+                        <a href="{{ route('user-profile') }}" class="dropdown-menu-item">
                             <i class="fas fa-user"></i>
                             <span>My Profile</span>
                         </a>
@@ -105,8 +104,7 @@
                         </a>
                     </li>
                     <li>
-                         <li>
-                            <a href="{{ route('logout') }}" class="dropdown-menu-item logout">
+                        <a href="{{ route('logout') }}" class="dropdown-menu-item logout">
                             <i class="fas fa-sign-out-alt"></i>
                             <span>Log Out</span>
                         </a>
