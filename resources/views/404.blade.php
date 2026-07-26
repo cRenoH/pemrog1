@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>404 Not Found</title>
-    <link rel="icon" href="{{ asset('img/logo2.png') }}" type="image/png">
+    <link rel="icon" href="{{ asset('img/logo.png') }}" type="image/png">
     <link href="https://fonts.googleapis.com/css?family=Montserrat:700,400&display=swap" rel="stylesheet">
     <style>
         body { background: #f8fafc; color: #222; font-family: 'Montserrat', sans-serif; margin: 0; }
